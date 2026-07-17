@@ -77,6 +77,26 @@ function CurrencyService:addShards(player: Player, elementId: string, amount: nu
 	return true
 end
 
+-- Add many shards in one shot with a SINGLE state push. Used by the generation
+-- tick / offline grant so a big batch never fans out into thousands of pushes.
+function CurrencyService:addShardsMap(player: Player, map: { [string]: number }): boolean
+	local data = Registry.DataService:get(player)
+	if not data then
+		return false
+	end
+	local any = false
+	for elementId, amount in pairs(map) do
+		if ElementConfig.exists(elementId) and amount ~= 0 then
+			data.shards[elementId] = clamp((data.shards[elementId] or 0) + amount)
+			any = true
+		end
+	end
+	if any then
+		Registry.StateSync:pushCurrencies(player)
+	end
+	return any
+end
+
 -- requirements: { [elementId] = amount }. Atomic: spends nothing unless ALL met.
 function CurrencyService:trySpendShards(player: Player, requirements: { [string]: number }): boolean
 	local data = Registry.DataService:get(player)

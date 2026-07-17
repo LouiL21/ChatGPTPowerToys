@@ -111,19 +111,41 @@ function EssenceService:_grant(player: Player, elapsed: number, efficiency: numb
 		Registry.QuestService:track(player, "collect_essence", essenceGain)
 	end
 
-	-- Shard accumulation.
+	-- Shard accumulation. Tally into a per-element map, then apply as ONE batched
+	-- push (a big offline grant could otherwise be thousands of individual pushes).
 	local acc = (_shardAccum[player.UserId] or 0) + self:getShardRate(player) * elapsed * efficiency
 	local wholeShards = math.floor(acc)
 	_shardAccum[player.UserId] = acc - wholeShards
-	for _ = 1, wholeShards do
-		Registry.CurrencyService:addShards(player, randomElement(), 1)
+	if wholeShards > 0 then
+		local map: { [string]: number } = {}
+		for _ = 1, wholeShards do
+			local id = randomElement()
+			map[id] = (map[id] or 0) + 1
+		end
+		Registry.CurrencyService:addShardsMap(player, map)
 	end
 
 	return { essence = essenceGain, shards = wholeShards }
 end
 
+-- Brand-new players get a small starter kit so they can fuse within seconds of
+-- joining (invisible onboarding — no waiting, no tutorial gate).
+function EssenceService:_grantStarter(player: Player)
+	Registry.CurrencyService:add(player, "essence", 150)
+	local map: { [string]: number } = {}
+	for _, element in ipairs(ElementConfig.List) do
+		map[element.id] = 25 -- enough for a couple of 2-element fusions
+	end
+	Registry.CurrencyService:addShardsMap(player, map)
+	ServerNet.fire(player, "Notify", {
+		text = "Welcome, Alchemist! Pick 2 elements and press FUSE to discover your first beast.",
+		kind = "info",
+	})
+end
+
 function EssenceService:_applyOffline(player: Player, data)
 	if data.lastSeen == 0 then
+		self:_grantStarter(player) -- first-ever join
 		return
 	end
 	local elapsed = os.time() - data.lastSeen
