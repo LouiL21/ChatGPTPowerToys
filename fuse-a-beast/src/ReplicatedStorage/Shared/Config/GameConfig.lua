@@ -1,0 +1,91 @@
+--!strict
+--[[
+	GameConfig
+	Global tunables for Fuse a Beast. Everything the design/economy touches lives
+	in Config/ so balancing never requires editing gameplay code.
+]]
+
+local GameConfig = {}
+
+-- ── Core economy ──────────────────────────────────────────────────────────
+GameConfig.BASE_ESSENCE_PER_SECOND = 1.0 -- Altar level 1 generation rate
+GameConfig.ALTAR_RATE_GROWTH = 1.18 -- multiplier per Altar level
+GameConfig.ALTAR_UPGRADE_BASE_COST = 100 -- essence cost for level 2
+GameConfig.ALTAR_UPGRADE_COST_GROWTH = 1.55 -- cost multiplier per level
+GameConfig.MAX_ALTAR_LEVEL = 250
+
+-- Shard generation (the Altar drips element shards used by fusion).
+GameConfig.SHARD_BASE_PER_SECOND = 0.4 -- shards/sec at altar level 1
+GameConfig.SHARD_ALTAR_GROWTH = 1.10 -- shard rate multiplier per altar level
+GameConfig.GENERATION_TICK = 5 -- seconds between server generation ticks
+GameConfig.COLLECT_TAP_SECONDS = 1.5 -- essence granted per manual Altar tap (in seconds of rate)
+
+-- Displayed beasts passively boost generation (idle synergy loop).
+GameConfig.DISPLAY_SLOT_BASE = 3
+GameConfig.DISPLAY_BOOST_PER_RARITY = { -- % additive essence boost per displayed beast
+	Common = 0.02,
+	Uncommon = 0.05,
+	Rare = 0.10,
+	Epic = 0.20,
+	Legendary = 0.45,
+	Mythic = 1.00,
+	Secret = 2.50,
+}
+
+-- ── Offline generation ────────────────────────────────────────────────────
+GameConfig.OFFLINE_CAP_SECONDS = 4 * 60 * 60 -- 4h default cap
+GameConfig.OFFLINE_CAP_SECONDS_GAMEPASS = 24 * 60 * 60 -- with "Extended Offline" pass
+GameConfig.OFFLINE_EFFICIENCY = 0.5 -- offline earns 50% of online rate (keeps active play valuable)
+
+-- ── Fusion ────────────────────────────────────────────────────────────────
+GameConfig.FUSION_SHARD_COST = 10 -- shards consumed per element input
+GameConfig.FUSION_ESSENCE_COST_BASE = 25 -- essence per fusion at altar level 1
+GameConfig.FUSION_BASE_COOLDOWN = 2.0 -- seconds between manual fusions (anti-spam, gameplay pacing)
+GameConfig.NEW_DISCOVERY_GEM_REWARD = { -- gems granted the FIRST time a rarity is discovered
+	Common = 1,
+	Uncommon = 2,
+	Rare = 5,
+	Epic = 15,
+	Legendary = 50,
+	Mythic = 150,
+	Secret = 500,
+}
+
+-- ── Rebirth / Ascension ───────────────────────────────────────────────────
+GameConfig.ASCENSION_ALTAR_REQUIREMENT = 50 -- min altar level to first ascend
+GameConfig.ASCENSION_MULT_PER_LEVEL = 0.25 -- +25% permanent essence per ascension
+GameConfig.ASCENSION_COST_GROWTH = 2.0
+
+-- ── Luck (drives rarity roll) ─────────────────────────────────────────────
+GameConfig.BASE_LUCK = 1.0
+GameConfig.LUCKY_GAMEPASS_BONUS = 0.5 -- +50% luck
+GameConfig.PREMIUM_LUCK_BONUS = 0.15 -- Roblox Premium members
+
+-- ── Retention ─────────────────────────────────────────────────────────────
+GameConfig.DAILY_STREAK_MAX = 7
+GameConfig.AUTOSAVE_INTERVAL = 60 -- seconds
+
+-- ── Anti-exploit ──────────────────────────────────────────────────────────
+GameConfig.REMOTE_RATE_LIMITS = { -- max calls per window (seconds)
+	Fuse = { max = 8, window = 1 },
+	UpgradeAltar = { max = 5, window = 1 },
+	SetDisplay = { max = 10, window = 1 },
+	ClaimDaily = { max = 3, window = 5 },
+	Ascend = { max = 2, window = 5 },
+	RequestTrade = { max = 5, window = 5 },
+	Collect = { max = 20, window = 1 },
+}
+
+-- ── Rarity table (weights are BEFORE luck/recipe modifiers) ───────────────
+GameConfig.RARITY_ORDER = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret" }
+GameConfig.RARITY_BASE_WEIGHTS = {
+	Common = 1000,
+	Uncommon = 420,
+	Rare = 150,
+	Epic = 40,
+	Legendary = 8,
+	Mythic = 1.2,
+	Secret = 0.08,
+}
+
+return GameConfig

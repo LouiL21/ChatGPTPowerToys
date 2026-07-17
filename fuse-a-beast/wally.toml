@@ -1,0 +1,13 @@
+[package]
+name = "fuseabeast/game"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+license = "MIT"
+
+# Recommended production dependencies.
+# Run `wally install` after installing Rojo + Wally toolchains (see docs/INSTALLATION.md).
+# The game ships with a self-contained data backend so it runs WITHOUT these,
+# but ProfileStore is the recommended session-locked persistence layer for launch.
+[dependencies]
+ProfileStore = "mad-studio/profile-store@1.0.0"
