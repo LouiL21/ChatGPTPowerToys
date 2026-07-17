@@ -10,11 +10,16 @@ market research as the highest expected-ROI opportunity on the 2026 platform:
 **shareable discovery moments** (viral growth), in a genre combination the top
 charts don't yet occupy.
 
+🆕 **New here / non-technical?** Start with the idiot-proof
+[**Setup Guide**](docs/SETUP_GUIDE.md) — GitHub → Roblox Studio → published, step by step.
+
 📄 **The full story:** [`docs/MARKET_RESEARCH.md`](docs/MARKET_RESEARCH.md) ·
 [`docs/GAME_DESIGN_DOCUMENT.md`](docs/GAME_DESIGN_DOCUMENT.md) ·
 [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) ·
 [`docs/OPTIMIZATION_REVIEW.md`](docs/OPTIMIZATION_REVIEW.md) ·
-[`docs/INSTALLATION.md`](docs/INSTALLATION.md)
+[`docs/ASSETS.md`](docs/ASSETS.md) ·
+[`docs/INSTALLATION.md`](docs/INSTALLATION.md) ·
+[`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md)
 
 ## Why this game
 
