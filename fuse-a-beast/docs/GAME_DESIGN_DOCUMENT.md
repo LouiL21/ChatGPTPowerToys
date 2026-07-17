@@ -66,7 +66,8 @@ Key tunables (`GameConfig.lua`):
 
 1. **Altar Level** (primary): each level multiplies essence *and* shard rate.
    Cost scales `100 × 1.55^(lvl-1)`. Max 250.
-2. **Beastdex completion**: 32 beasts at launch across 7 rarities; milestones at
+2. **Beastdex completion**: 68 beasts at launch across 7 rarities (including
+   live-event-gated beasts); milestones at
    25 and 100% grant achievements/badges.
 3. **Merge levels** (per beast, max 10): spend duplicates to raise a beast's
    display boost — gives duplicates value.

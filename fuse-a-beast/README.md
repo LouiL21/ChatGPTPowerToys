@@ -39,7 +39,7 @@ are data edits — which is exactly what makes the update cadence sustainable.
 
 - **Idle engine** with true **offline earnings** (capped, gamepass-extendable) and
   a smooth client-predicted essence counter.
-- **Discovery-fusion** engine: 6 elements, 32 beasts across 7 rarities
+- **Discovery-fusion** engine: 6 elements, 68 beasts across 7 rarities
   (Common → **Secret**), signature "recipe" combos, and a luck-driven rarity tail.
 - **Collection & Sanctuary:** Beastdex, display-for-boost synergy, and
   **merge-for-power** so duplicates matter.

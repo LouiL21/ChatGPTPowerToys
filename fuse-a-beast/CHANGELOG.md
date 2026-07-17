@@ -45,7 +45,8 @@ on weekly (per the "ship a great loop, then add content" strategy).
   (toasts), `FusionController` (discovery popup).
 
 ### Added — Content
-- 6 elements, 32 beasts across 7 rarities (Common → Secret), signature recipes,
+- 6 elements, 68 beasts across 7 rarities (Common → Secret, incl. event-gated),
+  signature recipes,
   6 gamepasses, 7 developer products, 7 daily quests, 7-day login streak,
   7 achievements.
 

@@ -68,8 +68,58 @@ BeastConfig.List = {
 	{ id = "chronodragon", name = "Chronodragon", rarity = "Secret", elements = { "Air", "Fire", "Void" } },
 	{ id = "prisma", name = "Prisma, the Unfused", rarity = "Secret", elements = { "Water", "Nature", "Air" } },
 
-	-- Event-gated example (only rollable during the "Summer Bloom" live event)
+	-- ── Expansion set 1 ──────────────────────────────────────────────────────
+	-- Extra Common/Uncommon singles for early-game discovery variety.
+	{ id = "bubblet", name = "Bubblet", rarity = "Common", elements = { "Water" } },
+	{ id = "clodling", name = "Clodling", rarity = "Common", elements = { "Earth" } },
+	{ id = "budling", name = "Budling", rarity = "Common", elements = { "Nature" } },
+	{ id = "nullkin", name = "Nullkin", rarity = "Common", elements = { "Void" } },
+	{ id = "flareimp", name = "Flare Imp", rarity = "Uncommon", elements = { "Fire" } },
+	{ id = "zephling", name = "Zephling", rarity = "Uncommon", elements = { "Air" } },
+
+	-- Fill the remaining element PAIRS (every 2-element combo now has a beast).
+	{ id = "wildfirestag", name = "Wildfire Stag", rarity = "Rare", elements = { "Fire", "Nature" } },
+	{ id = "mudbackturtle", name = "Mudback Turtle", rarity = "Rare", elements = { "Water", "Earth" } },
+	{ id = "pollenwing", name = "Pollenwing", rarity = "Rare", elements = { "Air", "Nature" } },
+	{ id = "gravemaw", name = "Gravemaw", rarity = "Epic", elements = { "Earth", "Void" } },
+
+	-- Second beast on several pairs (depth within a combo).
+	{ id = "geysereel", name = "Geyser Eel", rarity = "Epic", elements = { "Fire", "Water" } },
+	{ id = "nullhawk", name = "Nullhawk", rarity = "Epic", elements = { "Air", "Void" } },
+	{ id = "grovewarden", name = "Grovewarden", rarity = "Epic", elements = { "Earth", "Nature" } },
+	{ id = "reedray", name = "Reedray", rarity = "Rare", elements = { "Water", "Nature" } },
+
+	-- More Legendary three-element beasts.
+	{ id = "primordialgolem", name = "Primordial Golem", rarity = "Legendary", elements = { "Fire", "Water", "Earth" } },
+	{ id = "bogfirehydra", name = "Bogfire Hydra", rarity = "Legendary", elements = { "Fire", "Water", "Nature" } },
+	{ id = "volcanoroc", name = "Volcano Roc", rarity = "Legendary", elements = { "Fire", "Earth", "Air" } },
+	{ id = "monsoonserpent", name = "Monsoon Serpent", rarity = "Legendary", elements = { "Water", "Earth", "Air" } },
+	{ id = "canopycolossus", name = "Canopy Colossus", rarity = "Legendary", elements = { "Earth", "Nature", "Air" } },
+	{ id = "wildstormelk", name = "Wildstorm Elk", rarity = "Legendary", elements = { "Fire", "Nature", "Air" } },
+	{ id = "duststormwraith", name = "Duststorm Wraith", rarity = "Legendary", elements = { "Earth", "Air", "Void" } },
+	{ id = "sinkholehorror", name = "Sinkhole Horror", rarity = "Legendary", elements = { "Water", "Earth", "Void" } },
+	{ id = "blightflame", name = "Blightflame Beast", rarity = "Legendary", elements = { "Fire", "Nature", "Void" } },
+
+	-- More Mythic beasts.
+	{ id = "magmaleviathan", name = "Magma Leviathan", rarity = "Mythic", elements = { "Water", "Earth", "Fire" } },
+	{ id = "seraphofcinders", name = "Seraph of Cinders", rarity = "Mythic", elements = { "Nature", "Air", "Fire" } },
+	{ id = "abyssalwarden", name = "Abyssal Warden", rarity = "Mythic", elements = { "Earth", "Void", "Water" } },
+	{ id = "sporereaper", name = "Spore Reaper", rarity = "Mythic", elements = { "Air", "Nature", "Void" } },
+
+	-- More Secrets (the endgame chase).
+	{ id = "aurelion", name = "Aurelion, the First Flame", rarity = "Secret", elements = { "Fire", "Earth", "Air" } },
+	{ id = "umbrasovereign", name = "Umbra Sovereign", rarity = "Secret", elements = { "Void", "Nature", "Earth" } },
+
+	-- ── Live-event beasts (only rollable while their event flag is active) ─────
+	-- Summer Bloom
 	{ id = "sunpetal", name = "Sunpetal", rarity = "Legendary", elements = { "Nature", "Fire" }, event = "summer_bloom" },
+	{ id = "blossomsprite", name = "Blossom Sprite", rarity = "Rare", elements = { "Nature", "Water" }, event = "summer_bloom" },
+	-- Harvest Moon
+	{ id = "pumpkinking", name = "Pumpkin King", rarity = "Legendary", elements = { "Nature", "Void" }, event = "harvest_moon" },
+	-- Winter Freeze
+	{ id = "frostfangalpha", name = "Frostfang Alpha", rarity = "Secret", elements = { "Water", "Air" }, event = "winter_freeze" },
+	-- New Year
+	{ id = "fireworksphoenix", name = "Fireworks Phoenix", rarity = "Mythic", elements = { "Fire", "Air" }, event = "new_year" },
 }
 
 BeastConfig.ById = {} :: { [string]: any }
