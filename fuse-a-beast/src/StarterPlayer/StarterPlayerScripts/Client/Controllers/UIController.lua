@@ -411,9 +411,22 @@ function UIController._renderBeastdex()
 			BorderSizePixel = 0,
 			Parent = row,
 		})
+		-- Optional portrait: shown only if the beast has an `icon` asset id AND is
+		-- discovered. Otherwise the row stays on the code-built color placeholder.
+		local textLeft = 14
+		if discovered and beast.icon then
+			Create("ImageLabel", {
+				Size = UDim2.new(0, 38, 0, 38),
+				Position = UDim2.new(0, 12, 0.5, -19),
+				BackgroundTransparency = 1,
+				Image = beast.icon,
+				Parent = row,
+			})
+			textLeft = 58
+		end
 		Create("TextLabel", {
 			Size = UDim2.new(0.55, 0, 1, 0),
-			Position = UDim2.new(0, 14, 0, 0),
+			Position = UDim2.new(0, textLeft, 0, 0),
 			BackgroundTransparency = 1,
 			Font = Enum.Font.GothamBold,
 			TextSize = 14,

@@ -50,6 +50,11 @@ on weekly (per the "ship a great loop, then add content" strategy).
   6 gamepasses, 7 developer products, 7 daily quests, 7-day login streak,
   7 achievements.
 
+### Added — Assets pipeline
+- Optional `icon`/`model` asset-id hooks on beasts and `icon` on elements; the
+  Beastdex auto-renders a portrait when a beast has an `icon`, else falls back to
+  the code-built color placeholder. Full manifest in `docs/ASSETS.md`.
+
 ### Fixed (pre-release review passes)
 - Remote container name collision that made server→client remotes unreachable.
 - Offline/tick shard grants no longer fan out into thousands of state pushes

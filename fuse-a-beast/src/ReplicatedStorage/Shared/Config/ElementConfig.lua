@@ -10,6 +10,7 @@ export type Element = {
 	displayName: string,
 	color: { number }, -- {r,g,b} 0-1
 	baseWeight: number, -- relative generation frequency at the altar
+	icon: string?, -- optional "rbxassetid://<id>" element icon (falls back to color)
 }
 
 local ElementConfig = {}

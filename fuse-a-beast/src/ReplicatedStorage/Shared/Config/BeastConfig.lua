@@ -16,6 +16,12 @@ export type Beast = {
 	rarity: string,
 	elements: { string },
 	event: string?, -- optional event id gating availability
+	-- Optional art hooks. Leave nil to use the code-built color placeholder.
+	-- `icon`  = "rbxassetid://<id>" of a square beast portrait (used in the Beastdex).
+	-- `model` = "rbxassetid://<id>" of a beast model (used when a beast is displayed
+	--           in the Sanctuary — Sanctuary model spawning is a v0.2 feature).
+	icon: string?,
+	model: string?,
 }
 
 local BeastConfig = {}
