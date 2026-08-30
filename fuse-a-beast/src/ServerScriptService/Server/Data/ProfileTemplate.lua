@@ -16,7 +16,8 @@ for _, element in ipairs(ElementConfig.List) do
 end
 
 local ProfileTemplate = {
-	version = 1,
+	-- Bumped to 2 when beasts became variant-aware (see DataService migrations).
+	version = 2,
 
 	currencies = {
 		essence = 0, -- soft currency, generated + spent on fusion/upgrades
@@ -33,12 +34,25 @@ local ProfileTemplate = {
 		count = 0, -- number of rebirths
 	},
 
-	-- codex: discovered beasts. entry = { count = n, level = n }
-	-- `count` = duplicates owned; `level` = merge level (raises display boost).
-	codex = {} :: { [string]: { count: number, level: number } },
+	--[[
+		codex: everything you own, keyed by species then VARIANT.
+		  entry = { variants = { Normal = 3, Golden = 1 }, discovered = true }
+		Duplicates are never dead weight — two of the same species and variant
+		fuse into the next variant up, which is the long-tail progression.
+	]]
+	codex = {} :: { [string]: { variants: { [string]: number }, discovered: boolean } },
 
-	-- ordered list of beast ids physically living in the Sanctuary
-	display = {} :: { string },
+	-- Beasts physically living in the Sanctuary: { beastId, variant } pairs.
+	display = {} :: { { beastId: string, variant: string } },
+
+	-- The single beast that follows the player and fights in the Arena.
+	activePet = { beastId = "", variant = "Normal" },
+
+	battle = {
+		wins = 0,
+		losses = 0,
+		bossesCleared = {} :: { [string]: boolean },
+	},
 
 	-- Sanctuary (3D plot) progression, driven by the tycoon buy-pads.
 	plot = {
@@ -50,6 +64,7 @@ local ProfileTemplate = {
 
 	stats = {
 		totalFusions = 0,
+		totalSummons = 0,
 		totalEssenceCollected = 0,
 		totalDiscoveries = 0,
 		bestRarity = "none",

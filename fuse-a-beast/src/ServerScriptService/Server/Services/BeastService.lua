@@ -73,13 +73,13 @@ function BeastService:refresh(player: Player)
 	local slots = Registry.PlotService:habitatSlots(player)
 
 	local spawned = 0
-	for _, beastId in ipairs(data.display) do
+	for _, item in ipairs(data.display) do
 		if spawned >= slots then
 			break
 		end
-		local entry = data.codex[beastId]
-		if entry then
-			local model = BeastModelFactory.create(beastId, entry.level)
+		-- display entries are { beastId, variant } pairs.
+		if typeof(item) == "table" and typeof(item.beastId) == "string" then
+			local model = BeastModelFactory.create(item.beastId, 1, item.variant)
 			if model then
 				local position = randomPointInHabitat(centre)
 				BeastModelFactory.pivot(model, CFrame.new(position))

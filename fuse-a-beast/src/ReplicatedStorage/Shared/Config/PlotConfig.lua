@@ -50,7 +50,8 @@ PlotConfig.NODE_TIER_SPEEDUP = 0.78 -- interval multiplier per node tier
 PlotConfig.NODE_MAX_TIER = 5
 
 -- ── Landmarks ─────────────────────────────────────────────────────────────
-PlotConfig.ALTAR_OFFSET = Vector3.new(0, 0, -34) -- Fusion Altar, back-centre
+PlotConfig.ALTAR_OFFSET = Vector3.new(0, 0, -34) -- Summoning Altar, back-centre
+PlotConfig.CHAMBER_OFFSET = Vector3.new(-40, 0, -34) -- Fusion Chamber, back-left
 PlotConfig.SPAWN_OFFSET = Vector3.new(0, 0, 40) -- where the owner is placed
 PlotConfig.SIGN_OFFSET = Vector3.new(0, 0, 48) -- nameplate at the plot entrance
 
@@ -69,17 +70,21 @@ PlotConfig.ESSENCE_ORB_INTERVAL = 9 -- seconds between a beast's essence drops
 -- kind: "node" unlocks an element node · "nodeTier" upgrades all nodes
 --       "habitat" raises how many beasts can live on the plot
 --       "altar" raises the Altar level (fusion power / display slots)
+-- kind "building" reveals a structure (currently the Fusion Chamber).
 PlotConfig.BuyPads = {
 	{ id = "node_earth", order = 1, kind = "node", element = "Earth", cost = 400, label = "Earth Node" },
-	{ id = "node_air", order = 2, kind = "node", element = "Air", cost = 1200, label = "Air Node" },
-	{ id = "habitat_2", order = 3, kind = "habitat", value = 3, cost = 2500, label = "Habitat +3" },
-	{ id = "node_nature", order = 4, kind = "node", element = "Nature", cost = 5000, label = "Nature Node" },
-	{ id = "node_tier_2", order = 5, kind = "nodeTier", value = 2, cost = 9000, label = "Node Tier 2" },
-	{ id = "habitat_3", order = 6, kind = "habitat", value = 3, cost = 18000, label = "Habitat +3" },
-	{ id = "node_void", order = 7, kind = "node", element = "Void", cost = 40000, label = "Void Rift" },
-	{ id = "node_tier_3", order = 8, kind = "nodeTier", value = 3, cost = 90000, label = "Node Tier 3" },
-	{ id = "habitat_4", order = 9, kind = "habitat", value = 4, cost = 250000, label = "Habitat +4" },
-	{ id = "node_tier_4", order = 10, kind = "nodeTier", value = 4, cost = 800000, label = "Node Tier 4" },
+	-- The Chamber is deliberately early and cheap: fusing two beasts is the core
+	-- of the game, so players should reach it in their first session.
+	{ id = "fusion_chamber", order = 2, kind = "building", value = "chamber", cost = 900, label = "Fusion Chamber" },
+	{ id = "node_air", order = 3, kind = "node", element = "Air", cost = 1200, label = "Air Node" },
+	{ id = "habitat_2", order = 4, kind = "habitat", value = 3, cost = 2500, label = "Habitat +3" },
+	{ id = "node_nature", order = 5, kind = "node", element = "Nature", cost = 5000, label = "Nature Node" },
+	{ id = "node_tier_2", order = 6, kind = "nodeTier", value = 2, cost = 9000, label = "Node Tier 2" },
+	{ id = "habitat_3", order = 7, kind = "habitat", value = 3, cost = 18000, label = "Habitat +3" },
+	{ id = "node_void", order = 8, kind = "node", element = "Void", cost = 40000, label = "Void Rift" },
+	{ id = "node_tier_3", order = 9, kind = "nodeTier", value = 3, cost = 90000, label = "Node Tier 3" },
+	{ id = "habitat_4", order = 10, kind = "habitat", value = 4, cost = 250000, label = "Habitat +4" },
+	{ id = "node_tier_4", order = 11, kind = "nodeTier", value = 4, cost = 800000, label = "Node Tier 4" },
 }
 
 PlotConfig.PAD_ROW_Z = 44 -- plot-local Z for the buy-pad row

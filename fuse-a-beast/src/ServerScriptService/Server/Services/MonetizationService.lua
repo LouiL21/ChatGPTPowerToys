@@ -136,6 +136,20 @@ function MonetizationService:getFusionSpeed(player: Player): number
 	return self:_boostMult(player, "fusionSpeed")
 end
 
+-- Multiplier on a variant fusion's success chance (Chamber Mastery + boosts).
+-- Capped at 1.0 effective odds by the caller's math, so it never guarantees.
+function MonetizationService:getFusionLuck(player: Player): number
+	local mult = 1.0
+	if self:ownsGamepass(player, "ChamberMastery") then
+		mult *= (MonetizationConfig.Gamepasses.ChamberMastery.value :: number)
+	end
+	return mult * self:_boostMult(player, "fusionLuck")
+end
+
+function MonetizationService:hasAutoCollect(player: Player): boolean
+	return self:ownsGamepass(player, "AutoCollect") or self:ownsGamepass(player, "VIP")
+end
+
 function MonetizationService:getOfflineCap(player: Player): number
 	if self:ownsGamepass(player, "ExtendedOffline") then
 		return GameConfig.OFFLINE_CAP_SECONDS_GAMEPASS

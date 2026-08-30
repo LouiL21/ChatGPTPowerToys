@@ -14,8 +14,12 @@ local Remotes = {}
 
 -- Client -> Server (RemoteEvents the client fires)
 Remotes.ClientEvents = {
-	"Fuse",
-	"Merge",
+	"Fuse", -- summon at the Altar
+	"ChamberFuse", -- combine two owned beasts in the Fusion Chamber
+	"SetPet", -- choose the beast that follows you / fights
+	"FightBoss",
+	"ChallengePlayer",
+	"RespondDuel",
 	"UpgradeAltar",
 	"SetDisplay",
 	"ClaimDaily",
@@ -33,7 +37,10 @@ Remotes.ServerEvents = {
 	"StateUpdate", -- authoritative (partial or full) player-state replication
 	"Notify", -- transient toast/message
 	"FusionResult", -- result of a fusion (for animation + discovery popup)
-	"OpenFusion", -- player activated the Altar; client opens the fusion panel
+	"OpenFusion", -- player activated the Altar; client opens the summon panel
+	"OpenChamber", -- player activated the Fusion Chamber
+	"BattleEvent", -- streamed turn-by-turn battle updates
+	"DuelChallenge", -- someone challenged you to a duel
 }
 
 -- RemoteFunctions (request/response). Kept minimal — mutations go through events.

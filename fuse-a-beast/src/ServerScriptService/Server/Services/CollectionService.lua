@@ -1,38 +1,38 @@
 --!strict
 --[[
 	CollectionService
-	The Beastdex + Sanctuary. Handles:
-	  - SetDisplay: which discovered beasts sit in the Sanctuary (they boost idle
-	    essence, closing the collection -> production synergy loop),
-	  - Merge: spend duplicate copies to raise a beast's level (bigger display
-	    boost) — this is what gives duplicates value even without trading,
-	  - Beastdex completion achievements.
+	The Beastdex and the Sanctuary roster.
 
-	All ownership is validated against the server-side codex; the client can only
-	*request* a display/merge, never assert one.
+	Since the Fusion Chamber consumes beasts, this service also owns
+	`pruneOwnership` — the sweep that removes anything from the sanctuary or the
+	active-pet slot once the player no longer holds a copy. Every path that
+	destroys a beast calls it, so the world can never show a creature you sold
+	off to a fusion.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local BeastConfig = require(Shared.Config.BeastConfig)
-local TableUtil = require(Shared.Util.TableUtil)
+local VariantConfig = require(Shared.Config.VariantConfig)
+local BeastInventory = require(Shared.Util.BeastInventory)
 
 local ServerNet = require(script.Parent.Parent.ServerNet)
 
 local CollectionService = { Name = "CollectionService" }
 local Registry: any
 
-local MAX_MERGE_LEVEL = 10
--- Duplicates required to go from level L to L+1.
-local function mergeCost(level: number): number
-	return level * 3
-end
-
 function CollectionService:Init(registry)
 	Registry = registry
 end
 
+--[[
+	Choose which owned beasts physically live in the sanctuary.
+	payload.beasts = { { beastId = "...", variant = "..." }, ... }
+
+	Capacity is the plot's habitat size, and a given (species, variant) can only
+	be displayed as many times as the player actually owns.
+]]
 function CollectionService:setDisplay(player: Player, payload)
 	local data = Registry.DataService:get(player)
 	if not data then
@@ -42,24 +42,33 @@ function CollectionService:setDisplay(player: Player, payload)
 		return
 	end
 
-	-- Physical habitat capacity is the limit now (tycoon purchases + gamepass).
 	local slots = Registry.PlotService:habitatSlots(player)
-	local seen: { [string]: boolean } = {}
-	local newDisplay: { string } = {}
-	for _, beastId in ipairs(payload.beasts) do
+	local used: { [string]: number } = {}
+	local newDisplay = {}
+
+	for _, item in ipairs(payload.beasts) do
 		if #newDisplay >= slots then
 			break
 		end
-		-- must be a real, owned, not-yet-listed beast
-		if typeof(beastId) == "string" and BeastConfig.ById[beastId] and data.codex[beastId] and not seen[beastId] then
-			seen[beastId] = true
-			table.insert(newDisplay, beastId)
+		if
+			typeof(item) == "table"
+			and typeof(item.beastId) == "string"
+			and typeof(item.variant) == "string"
+			and BeastConfig.ById[item.beastId]
+			and VariantConfig.ById[item.variant]
+		then
+			local key = item.beastId .. "|" .. item.variant
+			local owned = BeastInventory.count(data.codex, item.beastId, item.variant)
+			local alreadyPlaced = used[key] or 0
+			if alreadyPlaced < owned then
+				used[key] = alreadyPlaced + 1
+				table.insert(newDisplay, { beastId = item.beastId, variant = item.variant })
+			end
 		end
 	end
 
 	data.display = newDisplay
 	Registry.QuestService:track(player, "set_display", 1)
-	-- Respawn the physical creatures so the sanctuary matches the new roster.
 	Registry.BeastService:refresh(player)
 	Registry.StateSync:push(player, {
 		display = data.display,
@@ -67,40 +76,59 @@ function CollectionService:setDisplay(player: Player, payload)
 	})
 end
 
-function CollectionService:merge(player: Player, payload)
+--[[
+	Drops anything the player no longer owns out of the sanctuary and the pet
+	slot. Called after every fusion, since fusing consumes copies.
+]]
+function CollectionService:pruneOwnership(player: Player)
 	local data = Registry.DataService:get(player)
 	if not data then
 		return
 	end
-	if typeof(payload) ~= "table" or typeof(payload.beastId) ~= "string" then
-		return
+
+	local used: { [string]: number } = {}
+	local kept = {}
+	for _, item in ipairs(data.display) do
+		local key = item.beastId .. "|" .. item.variant
+		local owned = BeastInventory.count(data.codex, item.beastId, item.variant)
+		local placed = used[key] or 0
+		if placed < owned then
+			used[key] = placed + 1
+			table.insert(kept, item)
+		end
 	end
-	local entry = data.codex[payload.beastId]
-	if not entry then
-		return
+
+	local displayChanged = #kept ~= #data.display
+	data.display = kept
+
+	local pet = data.activePet
+	local petLost = pet.beastId ~= "" and not BeastInventory.owns(data.codex, pet.beastId, pet.variant)
+
+	if displayChanged then
+		Registry.BeastService:refresh(player)
 	end
-	if entry.level >= MAX_MERGE_LEVEL then
-		ServerNet.notify(player, "This beast is already max level.", "warn")
-		return
+	if petLost then
+		-- refresh() falls back to the strongest remaining beast on its own.
+		data.activePet = { beastId = "", variant = "Normal" }
+		Registry.PetService:refresh(player)
 	end
-	local cost = mergeCost(entry.level)
-	-- Need `cost` duplicates ABOVE the single copy that represents the beast itself.
-	if entry.count - 1 < cost then
-		ServerNet.notify(player, string.format("Need %d duplicates to merge (have %d).", cost, entry.count - 1), "warn")
-		return
-	end
-	entry.count -= cost
-	entry.level += 1
-	ServerNet.notify(player, string.format("%s reached level %d!", BeastConfig.ById[payload.beastId].name, entry.level), "success")
-	Registry.StateSync:push(player, {
-		codex = data.codex,
-		ratePerSecond = Registry.EssenceService:getRate(player),
-	})
 end
 
--- Called by FusionService on each new discovery to fire completion milestones.
+-- Auto-place a newly acquired beast if the sanctuary has room.
+function CollectionService:tryAutoDisplay(player: Player, beastId: string, variant: string)
+	local data = Registry.DataService:get(player)
+	if not data then
+		return
+	end
+	if #data.display >= Registry.PlotService:habitatSlots(player) then
+		return
+	end
+	table.insert(data.display, { beastId = beastId, variant = variant })
+	Registry.BeastService:refresh(player)
+end
+
 function CollectionService:checkDexMilestones(player: Player, data)
-	local discovered = TableUtil.count(data.codex)
+	local discovered = BeastInventory.speciesCount(data.codex)
 	if discovered >= 25 then
 		Registry.QuestService:grantAchievement(player, "dex_25")
 	end
@@ -112,9 +140,6 @@ end
 function CollectionService:Start()
 	ServerNet.onEvent("SetDisplay", function(player, payload)
 		self:setDisplay(player, payload)
-	end)
-	ServerNet.onEvent("Merge", function(player, payload)
-		self:merge(player, payload)
 	end)
 end
 

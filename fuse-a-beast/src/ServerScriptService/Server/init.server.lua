@@ -37,6 +37,10 @@ local PickupService = require(Services.PickupService)
 local NodeService = require(Services.NodeService)
 local BeastService = require(Services.BeastService)
 local TycoonService = require(Services.TycoonService)
+-- Pet, fusion-chamber and combat layer.
+local PetService = require(Services.PetService)
+local FusionChamberService = require(Services.FusionChamberService)
+local BattleService = require(Services.BattleService)
 
 -- Registry: every service is reachable as Registry.<Name>.
 local Registry = {}
@@ -58,6 +62,9 @@ local allServices = {
 	NodeService,
 	BeastService,
 	TycoonService,
+	PetService,
+	FusionChamberService,
+	BattleService,
 }
 for _, service in ipairs(allServices) do
 	Registry[service.Name] = service

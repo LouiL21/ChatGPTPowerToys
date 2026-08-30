@@ -19,6 +19,7 @@ local Shared = ReplicatedStorage.Shared
 local GameConfig = require(Shared.Config.GameConfig)
 local ElementConfig = require(Shared.Config.ElementConfig)
 local BeastConfig = require(Shared.Config.BeastConfig)
+local VariantConfig = require(Shared.Config.VariantConfig)
 local Logger = require(Shared.Util.Logger).new("Essence")
 
 local ServerNet = require(script.Parent.Parent.ServerNet)
@@ -50,15 +51,18 @@ end
 
 -- ── Derived rates ───────────────────────────────────────────────────────────
 
+-- Beasts living in the sanctuary raise essence output. Rarity sets the base
+-- contribution; the variant multiplies it, so upgrading a beast in the Chamber
+-- pays off economically as well as in the Arena.
 function EssenceService:_displayBoost(data): number
 	local boost = 1.0
-	for _, beastId in ipairs(data.display) do
-		local beast = BeastConfig.ById[beastId]
-		local entry = data.codex[beastId]
-		if beast and entry then
-			local per = GameConfig.DISPLAY_BOOST_PER_RARITY[beast.rarity] or 0
-			-- merge level scales the boost (+10% of base per level above 1)
-			boost += per * (1 + (entry.level - 1) * 0.1)
+	for _, item in ipairs(data.display) do
+		if typeof(item) == "table" then
+			local beast = BeastConfig.ById[item.beastId]
+			if beast then
+				local per = GameConfig.DISPLAY_BOOST_PER_RARITY[beast.rarity] or 0
+				boost += per * VariantConfig.get(item.variant).essence
+			end
 		end
 	end
 	return boost

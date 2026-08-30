@@ -62,6 +62,10 @@ function StateSync:buildFull(player: Player)
 		codex = data.codex,
 		codexTotal = BeastConfig.count(),
 		display = data.display,
+		activePet = data.activePet,
+		battle = data.battle,
+		plot = data.plot,
+		habitatSlots = Registry.PlotService:habitatSlots(player),
 		quests = data.quests,
 		login = data.login,
 		achievements = data.achievements,
@@ -92,7 +96,14 @@ end
 function StateSync:pushCodex(player: Player)
 	local data = Registry.DataService:get(player)
 	if data then
-		self:push(player, { codex = data.codex, display = data.display, stats = data.stats })
+		self:push(player, {
+			codex = data.codex,
+			display = data.display,
+			activePet = data.activePet,
+			stats = data.stats,
+			currencies = data.currencies,
+			ratePerSecond = Registry.EssenceService:getRate(player),
+		})
 	end
 end
 

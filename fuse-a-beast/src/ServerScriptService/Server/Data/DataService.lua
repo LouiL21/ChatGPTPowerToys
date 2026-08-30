@@ -21,6 +21,7 @@ local Signal = require(Shared.Util.Signal)
 local Logger = require(Shared.Util.Logger).new("Data")
 
 local ProfileTemplate = require(script.Parent.ProfileTemplate)
+local Migrations = require(script.Parent.Migrations)
 local DataStoreBackend = require(script.Parent.Backends.DataStoreBackend)
 local MockBackend = require(script.Parent.Backends.MockBackend)
 
@@ -76,8 +77,12 @@ function DataService:_load(player: Player)
 		return
 	end
 
-	-- New player or migrate existing.
+	-- New player or migrate existing. Migrations reshape old saves BEFORE the
+	-- reconcile fills in any genuinely new fields.
 	local data = raw or TableUtil.deepCopy(ProfileTemplate)
+	if raw then
+		Migrations.run(data, ProfileTemplate.version)
+	end
 	TableUtil.reconcile(data, ProfileTemplate)
 
 	if data.stats.joinTimestamp == 0 then

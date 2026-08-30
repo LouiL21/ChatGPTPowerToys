@@ -18,6 +18,7 @@ local Shared = ReplicatedStorage.Shared
 local BeastConfig = require(Shared.Config.BeastConfig)
 local ElementConfig = require(Shared.Config.ElementConfig)
 local PlotConfig = require(Shared.Config.PlotConfig)
+local VariantConfig = require(Shared.Config.VariantConfig)
 
 local Build = require(script.Parent.Build)
 
@@ -71,20 +72,32 @@ end
 	attribute; `BeastModelFactory.pivot` re-places them, which keeps movement a
 	single cheap loop over parts rather than a weld/physics tree.
 ]]
-function BeastModelFactory.create(beastId: string, level: number?): Model?
+function BeastModelFactory.create(beastId: string, level: number?, variantId: string?): Model?
 	local beast = BeastConfig.ById[beastId]
 	if not beast then
 		return nil
 	end
 
+	local variant = VariantConfig.get(variantId or "Normal")
+	local variantIndex = VariantConfig.index(variant.id)
+
 	local scale = PlotConfig.RARITY_SCALE[beast.rarity] or 1
-	-- Merge levels add a subtle size bump so an upgraded beast reads as stronger.
-	scale *= 1 + ((level or 1) - 1) * 0.04
+	-- Higher variants read as slightly larger as well as brighter.
+	scale *= 1 + (variantIndex - 1) * 0.07
 
 	local rng = Random.new(seedFor(beastId))
 	local primary = elementColor(beast.elements[1])
 	local secondary = elementColor(beast.elements[math.min(2, #beast.elements)])
 	local accent = RARITY_COLOR[beast.rarity] or Color3.fromRGB(220, 220, 220)
+
+	-- A non-Normal variant recolours the creature toward its finish, so a Golden
+	-- reads as gold at a glance while keeping its species silhouette.
+	if variantIndex > 1 then
+		local blend = math.min(0.75, 0.3 + variantIndex * 0.12)
+		primary = primary:Lerp(variant.color, blend)
+		secondary = secondary:Lerp(variant.color, blend * 0.8)
+		accent = variant.color
+	end
 
 	local model = Instance.new("Model")
 	model.Name = beastId
@@ -198,8 +211,40 @@ function BeastModelFactory.create(beastId: string, level: number?): Model?
 		end
 	end
 
-	-- Rarity glow: the "visible from across the map" signal.
-	local range = PlotConfig.RARITY_LIGHT[beast.rarity] or 0
+	-- Sparkles mark every variant above Normal — cheap, readable prestige.
+	if variant.sparkle then
+		local sparkleHost = piece(
+			model,
+			Vector3.new(0.6, 0.6, 0.6),
+			Vector3.new(0, bodyY + bodyHeight * 0.5, 0),
+			variant.color,
+			Enum.PartType.Ball,
+			Enum.Material.Neon
+		)
+		sparkleHost.Name = "SparkleHost"
+		sparkleHost.Transparency = 1
+
+		local sparkles = Instance.new("ParticleEmitter")
+		sparkles.Color = ColorSequence.new(variant.color)
+		sparkles.LightEmission = 1
+		sparkles.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.5 * scale),
+			NumberSequenceKeypoint.new(1, 0),
+		})
+		sparkles.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.1),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		sparkles.Lifetime = NumberRange.new(0.7, 1.3)
+		sparkles.Rate = 6 + variantIndex * 5
+		sparkles.Speed = NumberRange.new(1, 2.5)
+		sparkles.SpreadAngle = Vector2.new(180, 180)
+		sparkles.Parent = sparkleHost
+	end
+
+	-- Rarity glow: the "visible from across the map" signal. Variants add to it,
+	-- so a Rainbow Common still stands out.
+	local range = (PlotConfig.RARITY_LIGHT[beast.rarity] or 0) + (variantIndex - 1) * 5
 	if range > 0 then
 		local aura = piece(
 			model,
@@ -214,14 +259,20 @@ function BeastModelFactory.create(beastId: string, level: number?): Model?
 		Build.glow(aura, accent, range * scale, 2 + rarityIndex * 0.4)
 	end
 
-	-- Nameplate with rarity colour.
-	local plate = Build.label(root, beast.name, Vector2.new(230, 52), bodyY + bodyHeight + 2.4)
+	-- Nameplate: variant-prefixed name in the variant/rarity colour.
+	local plate = Build.label(
+		root,
+		VariantConfig.label(variant.id, beast.name),
+		Vector2.new(240, 52),
+		bodyY + bodyHeight + 2.4
+	)
 	local plateText = plate:FindFirstChild("Text") :: TextLabel
 	plateText.TextColor3 = accent
 	plate.MaxDistance = 140
 
 	model:SetAttribute("BeastId", beastId)
 	model:SetAttribute("Rarity", beast.rarity)
+	model:SetAttribute("Variant", variant.id)
 	model:SetAttribute("Height", bodyY + bodyHeight)
 
 	return model

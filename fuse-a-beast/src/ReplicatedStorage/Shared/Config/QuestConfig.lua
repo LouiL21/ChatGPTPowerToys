@@ -10,7 +10,9 @@ local QuestConfig = {}
 
 -- Daily quest pool. Each day the server picks 3 at random (seeded by date).
 QuestConfig.DailyPool = {
-	{ id = "fuse_10", desc = "Perform 10 fusions", event = "fuse", target = 10, reward = { gems = 10 } },
+	{ id = "summon_10", desc = "Summon 10 beasts at the Altar", event = "summon", target = 10, reward = { gems = 10 } },
+	{ id = "fuse_5", desc = "Fuse 5 beasts in the Chamber", event = "fuse", target = 5, reward = { gems = 15 } },
+	{ id = "win_battle_3", desc = "Win 3 Arena battles", event = "win_battle", target = 3, reward = { gems = 20 } },
 	{ id = "discover_1_rare", desc = "Discover any Rare+ beast", event = "discover_rare_plus", target = 1, reward = { gems = 20 } },
 	{ id = "upgrade_altar_3", desc = "Upgrade your Altar 3 times", event = "upgrade_altar", target = 3, reward = { gems = 15 } },
 	{ id = "collect_essence_5k", desc = "Collect 5,000 essence", event = "collect_essence", target = 5000, reward = { gems = 12 } },
@@ -35,7 +37,13 @@ QuestConfig.LoginStreak = {
 
 -- One-time achievements (also map to Roblox Badges).
 QuestConfig.Achievements = {
-	{ id = "first_fusion", desc = "Perform your first fusion", badgeId = 0 },
+	{ id = "first_fusion", desc = "Summon your first beast", badgeId = 0 },
+	{ id = "first_variant", desc = "Create your first Shiny variant", badgeId = 0 },
+	{ id = "first_golden", desc = "Create a Golden variant", badgeId = 0 },
+	{ id = "first_rainbow", desc = "Create a Rainbow variant", badgeId = 0 },
+	{ id = "first_void_variant", desc = "Create a Void variant — the peak", badgeId = 0 },
+	{ id = "first_win", desc = "Win your first Arena battle", badgeId = 0 },
+	{ id = "boss_slayer", desc = "Defeat every Arena boss", badgeId = 0 },
 	{ id = "first_legendary", desc = "Discover a Legendary beast", badgeId = 0 },
 	{ id = "first_mythic", desc = "Discover a Mythic beast", badgeId = 0 },
 	{ id = "first_secret", desc = "Discover a Secret beast", badgeId = 0 },

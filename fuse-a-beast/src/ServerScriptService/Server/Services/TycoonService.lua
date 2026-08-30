@@ -51,6 +51,10 @@ function TycoonService:_apply(player: Player, spec): boolean
 		data.plot.habitatSlots += spec.value
 	elseif spec.kind == "altar" then
 		data.altar.level += spec.value
+	elseif spec.kind == "building" then
+		-- The purchase record itself is the unlock; applyProgression reveals the
+		-- structure and enables its prompt.
+		return true
 	else
 		return false
 	end

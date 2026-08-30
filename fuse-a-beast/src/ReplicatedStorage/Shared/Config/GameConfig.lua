@@ -41,6 +41,11 @@ GameConfig.OFFLINE_EFFICIENCY = 0.5 -- offline earns 50% of online rate (keeps a
 GameConfig.FUSION_SHARD_COST = 10 -- shards consumed per element input
 GameConfig.FUSION_ESSENCE_COST_BASE = 25 -- essence per fusion at altar level 1
 GameConfig.FUSION_BASE_COOLDOWN = 2.0 -- seconds between manual fusions (anti-spam, gameplay pacing)
+
+-- Fusion Chamber: combining two owned beasts. Cost scales with the better
+-- parent's variant so late-game fusions stay a real decision.
+GameConfig.CHAMBER_BASE_COST = 500
+GameConfig.CHAMBER_COST_GROWTH = 4.2
 GameConfig.NEW_DISCOVERY_GEM_REWARD = { -- gems granted the FIRST time a rarity is discovered
 	Common = 1,
 	Uncommon = 2,
@@ -68,6 +73,12 @@ GameConfig.AUTOSAVE_INTERVAL = 60 -- seconds
 -- ── Anti-exploit ──────────────────────────────────────────────────────────
 GameConfig.REMOTE_RATE_LIMITS = { -- max calls per window (seconds)
 	Fuse = { max = 8, window = 1 },
+	ChamberFuse = { max = 6, window = 1 },
+	SetPet = { max = 6, window = 1 },
+	FightBoss = { max = 3, window = 5 },
+	ChallengePlayer = { max = 3, window = 5 },
+	RespondDuel = { max = 5, window = 5 },
+	BuyCosmetic = { max = 4, window = 2 },
 	UpgradeAltar = { max = 5, window = 1 },
 	SetDisplay = { max = 10, window = 1 },
 	ClaimDaily = { max = 3, window = 5 },

@@ -40,6 +40,8 @@ export type PlotHandle = {
 	origin: CFrame,
 	altar: BasePart,
 	altarCrystal: BasePart,
+	chamber: Model,
+	chamberPillar: BasePart,
 	sign: TextLabel,
 	nodes: { [string]: NodeHandle },
 	pads: { [string]: PadHandle },
@@ -157,6 +159,76 @@ local function buildAltar(model: Model, origin: CFrame): (BasePart, BasePart)
 	return pillar, crystal
 end
 
+-- The Fusion Chamber: two input pods flanking a containment ring. Hidden until
+-- the player buys it, then revealed by PlotService:applyProgression.
+local function buildChamber(model: Model, origin: CFrame): (Model, BasePart)
+	local base = toWorld(origin, PlotConfig.CHAMBER_OFFSET)
+	local chamber = Instance.new("Model")
+	chamber.Name = "FusionChamber"
+	chamber.Parent = model
+
+	Build.disc(13, 2, base + Vector3.new(0, 1, 0), Color3.fromRGB(44, 38, 70), chamber).Name = "ChamberBase"
+
+	-- Two input pods — the visual metaphor for "put two beasts in".
+	for _, side in ipairs({ -1, 1 }) do
+		local pod = Build.part({
+			size = Vector3.new(5, 5, 5),
+			position = base + Vector3.new(side * 7, 4.5, 0),
+			color = Color3.fromRGB(58, 50, 92),
+			material = Enum.Material.Metal,
+			name = "Pod",
+			parent = chamber,
+		})
+		local podGlass = Build.part({
+			size = Vector3.new(4, 4, 4),
+			position = pod.Position + Vector3.new(0, 4, 0),
+			color = Color3.fromRGB(120, 200, 255),
+			material = Enum.Material.Glass,
+			shape = Enum.PartType.Ball,
+			canCollide = false,
+			transparency = 0.55,
+			name = "PodGlass",
+			parent = chamber,
+		})
+		Build.glow(podGlass, Color3.fromRGB(120, 200, 255), 10, 1.6)
+	end
+
+	-- Central containment core where the result appears.
+	local core = Build.part({
+		size = Vector3.new(4.5, 4.5, 4.5),
+		position = base + Vector3.new(0, 9, 0),
+		color = Color3.fromRGB(255, 150, 220),
+		material = Enum.Material.Neon,
+		shape = Enum.PartType.Ball,
+		canCollide = false,
+		name = "ChamberCore",
+		parent = chamber,
+	})
+	Build.glow(core, Color3.fromRGB(255, 150, 220), 22, 2.5)
+
+	local pillar = Build.part({
+		size = Vector3.new(5, 7, 5),
+		position = base + Vector3.new(0, 4.5, 0),
+		color = Color3.fromRGB(52, 44, 82),
+		material = Enum.Material.Slate,
+		name = "ChamberPillar",
+		parent = chamber,
+	})
+
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "ChamberPrompt"
+	prompt.ActionText = "Fuse Beasts"
+	prompt.ObjectText = "Fusion Chamber"
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 16
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = pillar
+
+	Build.label(core, "Fusion Chamber", Vector2.new(250, 50), 5)
+
+	return chamber, pillar
+end
+
 local function buildNode(model: Model, origin: CFrame, spec): NodeHandle
 	local base = toWorld(origin, spec.offset)
 	local color = elementColor(spec.element)
@@ -223,6 +295,7 @@ function PlotBuilder.build(index: number, origin: CFrame, parent: Instance): Plo
 
 	buildGround(model, origin)
 	local altar, altarCrystal = buildAltar(model, origin)
+	local chamber, chamberPillar = buildChamber(model, origin)
 
 	local nodes: { [string]: NodeHandle } = {}
 	for _, spec in ipairs(PlotConfig.Nodes) do
@@ -252,6 +325,8 @@ function PlotBuilder.build(index: number, origin: CFrame, parent: Instance): Plo
 		origin = origin,
 		altar = altar,
 		altarCrystal = altarCrystal,
+		chamber = chamber,
+		chamberPillar = chamberPillar,
 		sign = sign,
 		nodes = nodes,
 		pads = pads,

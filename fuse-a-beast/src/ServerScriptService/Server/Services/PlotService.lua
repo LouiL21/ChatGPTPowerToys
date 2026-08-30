@@ -94,6 +94,22 @@ function PlotService:applyProgression(player: Player)
 		end
 	end
 
+	-- The Fusion Chamber only exists once bought — hiding it keeps the first
+	-- session focused on summoning, and makes buying it feel like an event.
+	local hasChamber = data.plot.purchasedPads["fusion_chamber"] == true
+	for _, part in ipairs(handle.chamber:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Transparency = hasChamber and (part.Name == "PodGlass" and 0.55 or 0) or 1
+			part.CanCollide = hasChamber and part.Name ~= "PodGlass"
+		elseif part:IsA("PointLight") then
+			part.Enabled = hasChamber
+		elseif part:IsA("BillboardGui") then
+			part.Enabled = hasChamber
+		elseif part:IsA("ProximityPrompt") then
+			part.Enabled = hasChamber
+		end
+	end
+
 	handle.sign.Text = player.DisplayName .. "'s Sanctuary"
 end
 
@@ -141,27 +157,35 @@ end
 -- The Altar's ProximityPrompt is what opens the fusion panel — the UI is now
 -- reached by walking to a place in the world, not by a button that is always
 -- on screen. Connections are tracked per plot and torn down on release.
-local _altarConnections: { [number]: RBXScriptConnection } = {}
+local _altarConnections: { [number]: { RBXScriptConnection } } = {}
 
-function PlotService:_bindAltar(player: Player, handle)
-	local existing = _altarConnections[handle.index]
-	if existing then
-		existing:Disconnect()
-	end
-
-	local prompt = handle.altar:FindFirstChild("AltarPrompt") :: ProximityPrompt?
+local function bindPrompt(handle, host: Instance, promptName: string, player: Player, remoteName: string, denial: string)
+	local prompt = host:FindFirstChild(promptName) :: ProximityPrompt?
 	if not prompt then
 		return
 	end
-
-	_altarConnections[handle.index] = prompt.Triggered:Connect(function(triggering)
-		-- Visitors can admire the altar; only the owner can fuse at it.
+	local connection = prompt.Triggered:Connect(function(triggering)
+		-- Visitors can admire the buildings; only the owner may use them.
 		if triggering ~= player then
-			ServerNet.notify(triggering, "This is someone else's Altar. Head home to fuse!", "warn")
+			ServerNet.notify(triggering, denial, "warn")
 			return
 		end
-		ServerNet.fire(player, "OpenFusion", { open = true })
+		ServerNet.fire(player, remoteName, { open = true })
 	end)
+	local bucket = _altarConnections[handle.index]
+	table.insert(bucket, connection)
+end
+
+function PlotService:_bindAltar(player: Player, handle)
+	for _, connection in ipairs(_altarConnections[handle.index] or {}) do
+		connection:Disconnect()
+	end
+	_altarConnections[handle.index] = {}
+
+	bindPrompt(handle, handle.altar, "AltarPrompt", player, "OpenFusion",
+		"This is someone else's Altar. Head home to summon!")
+	bindPrompt(handle, handle.chamberPillar, "ChamberPrompt", player, "OpenChamber",
+		"This is someone else's Chamber. Head home to fuse!")
 end
 
 function PlotService:teleportHome(player: Player)
@@ -203,11 +227,10 @@ function PlotService:_release(player: Player)
 	handle.beastFolder:ClearAllChildren()
 	handle.sign.Text = "Empty Sanctuary"
 
-	local altarConnection = _altarConnections[index]
-	if altarConnection then
-		altarConnection:Disconnect()
-		_altarConnections[index] = nil
+	for _, connection in ipairs(_altarConnections[index] or {}) do
+		connection:Disconnect()
 	end
+	_altarConnections[index] = nil
 
 	_ownerByIndex[index] = nil
 	_indexByUser[player.UserId] = nil
