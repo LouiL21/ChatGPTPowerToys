@@ -22,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local PlotConfig = require(Shared.Config.PlotConfig)
+local VariantConfig = require(Shared.Config.VariantConfig)
 local Logger = require(Shared.Util.Logger).new("Beast")
 
 local BeastModelFactory = require(script.Parent.Parent.World.BeastModelFactory)
@@ -38,10 +39,11 @@ type Agent = {
 	nextOrb: number,
 	speed: number,
 	homeCentre: Vector3,
+	rarity: string,
+	variant: string,
 }
 
 local _agents: { Agent } = {}
-local ORB_SHARE = 0.4 -- fraction of passive rate paid out as collectable orbs
 
 function BeastService:Init(registry)
 	Registry = registry
@@ -94,6 +96,8 @@ function BeastService:refresh(player: Player)
 					nextOrb = os.clock() + math.random() * PlotConfig.ESSENCE_ORB_INTERVAL,
 					speed = 3 + math.random() * 2.5,
 					homeCentre = centre,
+					rarity = model:GetAttribute("Rarity") or "Common",
+					variant = model:GetAttribute("Variant") or "Normal",
 				})
 				spawned += 1
 			end
@@ -135,22 +139,27 @@ function BeastService:playFusionBurst(player: Player, rarity: string)
 	end)
 end
 
+--[[
+	An orb is worth what THIS beast contributes, scaled by its rarity and
+	variant. The previous even split meant adding beasts made each orb smaller,
+	so the reward for growing a sanctuary was more running for the same money —
+	which is why orbs felt like they did nothing.
+]]
 function BeastService:_dropOrb(agent: Agent, player: Player)
 	local rate = Registry.EssenceService:getRate(player)
-	local count = 0
-	for _, other in ipairs(_agents) do
-		if other.userId == agent.userId then
-			count += 1
-		end
-	end
-	if count == 0 then
-		return
-	end
-	local amount = rate * PlotConfig.ESSENCE_ORB_INTERVAL * ORB_SHARE / count
+	local rarityMult = PlotConfig.ORB_RARITY_MULT[agent.rarity] or 1
+	local variantMult = VariantConfig.get(agent.variant).essence or 1
+
+	local amount = rate * PlotConfig.ESSENCE_ORB_INTERVAL * PlotConfig.ORB_SHARE * rarityMult * variantMult
 	if amount <= 0 then
 		return
 	end
-	Registry.PickupService:spawn(player, "essence", { amount = amount }, agent.position + Vector3.new(0, 2.5, 0))
+	Registry.PickupService:spawn(
+		player,
+		"essence",
+		{ amount = math.floor(amount + 0.5), rarity = agent.rarity, variant = agent.variant },
+		agent.position + Vector3.new(0, 2.5, 0)
+	)
 end
 
 function BeastService:Start()

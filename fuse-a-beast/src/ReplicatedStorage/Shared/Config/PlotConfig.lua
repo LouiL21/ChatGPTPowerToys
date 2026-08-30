@@ -66,6 +66,23 @@ PlotConfig.HABITAT_RADIUS = 36
 PlotConfig.MAX_PICKUPS_PER_PLOT = 28 -- hard cap: keeps part count (and lag) bounded
 PlotConfig.PICKUP_LIFETIME = 90 -- seconds before an uncollected pickup despawns
 PlotConfig.ESSENCE_ORB_INTERVAL = 9 -- seconds between a beast's essence drops
+PlotConfig.PICKUP_MAGNET_RANGE = 16 -- studs at which pickups start flying to the owner
+PlotConfig.PICKUP_MAGNET_SPEED = 34 -- studs/sec once a pickup is homing
+
+-- An orb's worth is the DROPPING BEAST's, not an even split of the plot's rate.
+-- Splitting meant every extra beast made every orb worth less, so a sanctuary
+-- full of Mythics paid the same dribble as one Common — which is exactly why
+-- picking orbs up felt pointless. Now a rare beast visibly pays more.
+PlotConfig.ORB_SHARE = 0.5 -- orb value as a fraction of the plot's per-second rate
+PlotConfig.ORB_RARITY_MULT = {
+	Common = 1,
+	Uncommon = 1.6,
+	Rare = 2.6,
+	Epic = 4.5,
+	Legendary = 9,
+	Mythic = 20,
+	Secret = 50,
+}
 
 -- ── Tycoon buy-pads ───────────────────────────────────────────────────────
 -- Stepping on a pad charges essence and applies `apply`. Pads are laid out in a

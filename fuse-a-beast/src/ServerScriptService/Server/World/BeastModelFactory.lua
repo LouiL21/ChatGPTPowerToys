@@ -3,10 +3,19 @@
 	BeastModelFactory
 	Builds a physical creature from primitives — no art assets required.
 
-	The important design rule lives here: RARITY IS PHYSICAL. A Common is
-	knee-high and dull; a Mythic towers and glows so brightly you can pick it out
-	from across the island. That visible status is the game's flex and the reason
-	a visitor screenshots someone's sanctuary.
+	Two design rules live here.
+
+	1. RARITY IS PHYSICAL. A Common is knee-high and dull; a Mythic towers and
+	   glows so brightly you can pick it out from across the island. That visible
+	   status is the game's flex and the reason a visitor screenshots someone's
+	   sanctuary.
+
+	2. SPECIES HAVE SILHOUETTES. Every beast used to be the same quadruped with
+	   jittered dimensions, so a Beastdex of 68 creatures read as one creature in
+	   68 colours. Each species now resolves to a body PLAN — serpent, avian,
+	   golem, wisp, brute or quadruped — chosen from its primary element with a
+	   deterministic split, so a Fire beast and a Void beast are different animals
+	   at a glance, not different palettes.
 
 	Every part is anchored and the model moves via PivotTo, so a plot full of
 	beasts costs no physics simulation.
@@ -24,6 +33,8 @@ local Build = require(script.Parent.Build)
 
 local BeastModelFactory = {}
 
+local RARITY_ORDER = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret" }
+
 local RARITY_COLOR = {
 	Common = Color3.fromRGB(180, 180, 180),
 	Uncommon = Color3.fromRGB(90, 200, 100),
@@ -32,6 +43,21 @@ local RARITY_COLOR = {
 	Legendary = Color3.fromRGB(245, 180, 40),
 	Mythic = Color3.fromRGB(240, 70, 120),
 	Secret = Color3.fromRGB(255, 255, 255),
+}
+
+--[[
+	Body plans available to each element. The hash picks one of the two, so a
+	species always looks the same but siblings of one element still differ.
+	Air leans airborne, Earth leans heavy, Void leans incorporeal — the shape
+	tells you something true about the beast before you read its card.
+]]
+local FORMS_BY_ELEMENT: { [string]: { string } } = {
+	Fire = { "quadruped", "brute" },
+	Water = { "serpent", "quadruped" },
+	Earth = { "golem", "brute" },
+	Air = { "avian", "wisp" },
+	Nature = { "quadruped", "avian" },
+	Void = { "wisp", "serpent" },
 }
 
 local function elementColor(elementId: string): Color3
@@ -52,7 +78,34 @@ local function seedFor(beastId: string): number
 	return seed
 end
 
-local function piece(model: Model, size: Vector3, offset: Vector3, color: Color3, shape: Enum.PartType?, material: Enum.Material?): BasePart
+local function rarityIndexOf(rarity: string): number
+	return table.find(RARITY_ORDER, rarity) or 1
+end
+
+local function formFor(beast, seed: number): string
+	local options = FORMS_BY_ELEMENT[beast.elements[1]] or { "quadruped", "brute" }
+	-- Legendary+ single-element beasts get the more dramatic of the two plans,
+	-- so the top of the dex never looks like a bigger Common.
+	if rarityIndexOf(beast.rarity) >= 5 then
+		return options[1]
+	end
+	return options[(seed % #options) + 1]
+end
+
+--[[
+	One piece of a creature. `rotation` is stored as an attribute rather than
+	baked into the CFrame, because `pivot` rebuilds every part's CFrame from its
+	stored offset each time the beast moves.
+]]
+local function piece(
+	model: Model,
+	size: Vector3,
+	offset: Vector3,
+	color: Color3,
+	shape: Enum.PartType?,
+	material: Enum.Material?,
+	rotation: Vector3?
+): BasePart
 	local part = Build.part({
 		size = size,
 		color = color,
@@ -64,8 +117,498 @@ local function piece(model: Model, size: Vector3, offset: Vector3, color: Color3
 		parent = model,
 	})
 	part:SetAttribute("Offset", offset)
+	if rotation then
+		part:SetAttribute("Rot", rotation)
+	end
 	return part
 end
+
+-- Two eyes with pupils, used by every form that has a face.
+local function addEyes(model: Model, headSize: number, headY: number, headZ: number, spread: number)
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(headSize * 0.26, headSize * 0.26, headSize * 0.26),
+			Vector3.new(side * spread, headY + headSize * 0.12, headZ - headSize * 0.34),
+			Color3.fromRGB(250, 250, 255),
+			Enum.PartType.Ball
+		).Name = "Eye"
+		piece(
+			model,
+			Vector3.new(headSize * 0.13, headSize * 0.13, headSize * 0.13),
+			Vector3.new(side * spread, headY + headSize * 0.12, headZ - headSize * 0.44),
+			Color3.fromRGB(18, 14, 28),
+			Enum.PartType.Ball
+		).Name = "Pupil"
+	end
+end
+
+-- ── Body plans ────────────────────────────────────────────────────────────
+-- Each returns the creature's overall height, used to place the nameplate.
+
+local function buildQuadruped(model: Model, rng: Random, scale: number, primary: Color3, secondary: Color3, accent: Color3, rarityIndex: number): number
+	local bodyLength = rng:NextNumber(3.4, 4.6) * scale
+	local bodyHeight = rng:NextNumber(2.4, 3.2) * scale
+	local bodyWidth = rng:NextNumber(2.4, 3.0) * scale
+	local legHeight = rng:NextNumber(1.6, 2.6) * scale
+	local bodyY = legHeight + bodyHeight / 2
+
+	piece(model, Vector3.new(bodyWidth, bodyHeight, bodyLength), Vector3.new(0, bodyY, 0), primary, Enum.PartType.Ball).Name =
+		"Body"
+
+	local headSize = bodyHeight * rng:NextNumber(0.72, 0.92)
+	local headZ = -(bodyLength / 2) - headSize * 0.35
+	local headY = bodyY + bodyHeight * rng:NextNumber(0.18, 0.42)
+	piece(model, Vector3.new(headSize, headSize, headSize), Vector3.new(0, headY, headZ), primary, Enum.PartType.Ball).Name =
+		"Head"
+
+	piece(
+		model,
+		Vector3.new(headSize * 0.5, headSize * 0.45, headSize * 0.6),
+		Vector3.new(0, headY - headSize * 0.16, headZ - headSize * 0.5),
+		secondary,
+		Enum.PartType.Ball
+	).Name = "Snout"
+
+	-- Ears give the four-legged plan a recognisable head shape.
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(headSize * 0.18, headSize * 0.5, headSize * 0.3),
+			Vector3.new(side * headSize * 0.3, headY + headSize * 0.5, headZ + headSize * 0.1),
+			secondary,
+			Enum.PartType.Ball,
+			nil,
+			Vector3.new(0, 0, side * 0.35)
+		).Name = "Ear"
+	end
+
+	addEyes(model, headSize, headY, headZ, headSize * 0.26)
+
+	local legInsetX = bodyWidth * 0.32
+	local legInsetZ = bodyLength * 0.3
+	for _, sx in ipairs({ -1, 1 }) do
+		for _, sz in ipairs({ -1, 1 }) do
+			piece(
+				model,
+				Vector3.new(bodyWidth * 0.24, legHeight, bodyWidth * 0.24),
+				Vector3.new(sx * legInsetX, legHeight / 2, sz * legInsetZ),
+				secondary,
+				Enum.PartType.Cylinder
+			).Name = "Leg"
+		end
+	end
+
+	piece(
+		model,
+		Vector3.new(bodyWidth * 0.3, bodyWidth * 0.3, bodyLength * 0.7),
+		Vector3.new(0, bodyY + bodyHeight * 0.1, bodyLength / 2 + bodyLength * 0.24),
+		secondary,
+		Enum.PartType.Ball
+	).Name = "Tail"
+
+	if rarityIndex >= 3 then
+		piece(
+			model,
+			Vector3.new(headSize * 0.2, headSize * 0.8, headSize * 0.2),
+			Vector3.new(0, headY + headSize * 0.62, headZ + headSize * 0.06),
+			accent,
+			Enum.PartType.Ball,
+			Enum.Material.Neon
+		).Name = "Horn"
+	end
+
+	return bodyY + bodyHeight
+end
+
+local function buildSerpent(model: Model, rng: Random, scale: number, primary: Color3, secondary: Color3, accent: Color3, rarityIndex: number): number
+	-- A chain of tapering segments riding a slow S-curve. No legs — it hovers
+	-- just off the ground, which is what makes it read as a snake and not a
+	-- stretched dog.
+	local segments = 8
+	local girth = rng:NextNumber(1.5, 2.1) * scale
+	local step = girth * 1.05
+	local baseY = girth * 0.9
+
+	for i = 1, segments do
+		local t = (i - 1) / (segments - 1)
+		local taper = 1 - t * 0.62
+		local sway = math.sin(t * math.pi * 1.6) * girth * 0.9
+		piece(
+			model,
+			Vector3.new(girth * taper, girth * taper * 0.85, girth * taper),
+			Vector3.new(sway, baseY + math.sin(t * math.pi) * girth * 0.5, (i - 1) * step - step * 0.5),
+			i % 2 == 0 and secondary or primary,
+			Enum.PartType.Ball
+		).Name = "Segment"
+	end
+
+	local headSize = girth * 1.15
+	local headY = baseY + girth * 0.4
+	local headZ = -step * 1.1
+	piece(model, Vector3.new(headSize * 0.95, headSize * 0.8, headSize * 1.3), Vector3.new(0, headY, headZ), primary, Enum.PartType.Ball).Name =
+		"Head"
+	addEyes(model, headSize, headY, headZ - headSize * 0.2, headSize * 0.24)
+
+	-- Jaw and a forked tongue: cheap, and it sells the silhouette.
+	piece(
+		model,
+		Vector3.new(headSize * 0.2, headSize * 0.12, headSize * 0.5),
+		Vector3.new(0, headY - headSize * 0.22, headZ - headSize * 0.75),
+		Color3.fromRGB(220, 70, 90),
+		Enum.PartType.Block
+	).Name = "Tongue"
+
+	-- Side fins along the first third of the body.
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(girth * 1.5, girth * 0.12, girth * 1.1),
+			Vector3.new(side * girth * 0.8, headY - girth * 0.15, step * 0.8),
+			accent,
+			Enum.PartType.Block,
+			Enum.Material.Neon,
+			Vector3.new(0, 0, side * 0.5)
+		).Name = "Fin"
+	end
+
+	if rarityIndex >= 3 then
+		-- A crest of descending spines down the spine.
+		for i = 1, 4 do
+			local t = (i - 1) / 4
+			piece(
+				model,
+				Vector3.new(girth * 0.12, girth * (0.8 - t * 0.4), girth * 0.3),
+				Vector3.new(math.sin(t * math.pi * 1.6) * girth * 0.9, headY + girth * 0.5, i * step - step * 0.5),
+				accent,
+				Enum.PartType.Block,
+				Enum.Material.Neon
+			).Name = "Spine"
+		end
+	end
+
+	return headY + headSize
+end
+
+local function buildAvian(model: Model, rng: Random, scale: number, primary: Color3, secondary: Color3, accent: Color3, rarityIndex: number): number
+	-- Upright, two legs, big wings. Tall rather than long, so it stands out in a
+	-- habitat full of four-legged creatures.
+	local legHeight = rng:NextNumber(2.0, 3.0) * scale
+	local bodyHeight = rng:NextNumber(2.6, 3.4) * scale
+	local bodyWidth = rng:NextNumber(2.0, 2.6) * scale
+	local bodyY = legHeight + bodyHeight * 0.5
+
+	piece(model, Vector3.new(bodyWidth, bodyHeight, bodyWidth * 1.1), Vector3.new(0, bodyY, 0), primary, Enum.PartType.Ball).Name =
+		"Body"
+
+	local headSize = bodyWidth * 0.8
+	local headY = bodyY + bodyHeight * 0.6
+	piece(model, Vector3.new(headSize, headSize, headSize), Vector3.new(0, headY, -headSize * 0.15), primary, Enum.PartType.Ball).Name =
+		"Head"
+	addEyes(model, headSize, headY, -headSize * 0.15, headSize * 0.28)
+
+	-- Beak: two stacked wedges reading as an open bill.
+	piece(
+		model,
+		Vector3.new(headSize * 0.34, headSize * 0.3, headSize * 0.9),
+		Vector3.new(0, headY - headSize * 0.06, -headSize * 0.78),
+		accent,
+		Enum.PartType.Block,
+		nil,
+		Vector3.new(0.12, 0, 0)
+	).Name = "Beak"
+
+	-- Wings, swept back and translucent.
+	for _, side in ipairs({ -1, 1 }) do
+		local wing = piece(
+			model,
+			Vector3.new(bodyWidth * 1.9, bodyHeight * 0.14, bodyWidth * 1.5),
+			Vector3.new(side * bodyWidth * 1.0, bodyY + bodyHeight * 0.18, bodyWidth * 0.15),
+			secondary,
+			Enum.PartType.Block,
+			Enum.Material.Neon,
+			Vector3.new(0, 0, side * 0.45)
+		)
+		wing.Name = "Wing"
+		wing.Transparency = 0.22
+	end
+
+	-- Fan tail.
+	for i = -1, 1 do
+		piece(
+			model,
+			Vector3.new(bodyWidth * 0.28, bodyHeight * 0.12, bodyWidth * 1.3),
+			Vector3.new(i * bodyWidth * 0.28, bodyY - bodyHeight * 0.25, bodyWidth * 1.1),
+			secondary,
+			Enum.PartType.Block,
+			nil,
+			Vector3.new(-0.25, i * 0.18, 0)
+		).Name = "TailFeather"
+	end
+
+	-- Two thin legs with feet.
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(bodyWidth * 0.16, legHeight, bodyWidth * 0.16),
+			Vector3.new(side * bodyWidth * 0.24, legHeight / 2, 0),
+			accent,
+			Enum.PartType.Cylinder
+		).Name = "Leg"
+		piece(
+			model,
+			Vector3.new(bodyWidth * 0.34, bodyWidth * 0.12, bodyWidth * 0.6),
+			Vector3.new(side * bodyWidth * 0.24, bodyWidth * 0.06, -bodyWidth * 0.14),
+			accent,
+			Enum.PartType.Block
+		).Name = "Foot"
+	end
+
+	if rarityIndex >= 4 then
+		piece(
+			model,
+			Vector3.new(headSize * 0.16, headSize * 0.7, headSize * 0.4),
+			Vector3.new(0, headY + headSize * 0.6, -headSize * 0.05),
+			accent,
+			Enum.PartType.Block,
+			Enum.Material.Neon,
+			Vector3.new(-0.3, 0, 0)
+		).Name = "Crest"
+	end
+
+	return headY + headSize
+end
+
+local function buildGolem(model: Model, rng: Random, scale: number, primary: Color3, secondary: Color3, accent: Color3, rarityIndex: number): number
+	-- All blocks, no neck, wider than it is tall. Reads as heavy from any angle.
+	local legHeight = rng:NextNumber(1.2, 1.8) * scale
+	local torsoHeight = rng:NextNumber(3.0, 3.8) * scale
+	local torsoWidth = rng:NextNumber(3.4, 4.2) * scale
+	local torsoDepth = torsoWidth * 0.72
+	local bodyY = legHeight + torsoHeight * 0.5
+
+	piece(model, Vector3.new(torsoWidth, torsoHeight, torsoDepth), Vector3.new(0, bodyY, 0), primary, Enum.PartType.Block).Name =
+		"Torso"
+
+	local headSize = torsoWidth * 0.42
+	local headY = bodyY + torsoHeight * 0.5 + headSize * 0.3
+	piece(model, Vector3.new(headSize, headSize * 0.85, headSize), Vector3.new(0, headY, -torsoDepth * 0.08), primary, Enum.PartType.Block).Name =
+		"Head"
+	-- Glowing slot eyes rather than balls — a golem has no eyeballs.
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(headSize * 0.26, headSize * 0.12, headSize * 0.12),
+			Vector3.new(side * headSize * 0.24, headY + headSize * 0.06, -torsoDepth * 0.08 - headSize * 0.5),
+			accent,
+			Enum.PartType.Block,
+			Enum.Material.Neon
+		).Name = "Eye"
+	end
+
+	-- Slab arms hanging past the waist.
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(torsoWidth * 0.3, torsoHeight * 0.9, torsoDepth * 0.55),
+			Vector3.new(side * torsoWidth * 0.66, bodyY - torsoHeight * 0.06, 0),
+			secondary,
+			Enum.PartType.Block,
+			nil,
+			Vector3.new(0, 0, side * 0.08)
+		).Name = "Arm"
+		piece(
+			model,
+			Vector3.new(torsoWidth * 0.34, torsoWidth * 0.3, torsoDepth * 0.62),
+			Vector3.new(side * torsoWidth * 0.7, bodyY - torsoHeight * 0.56, 0),
+			primary,
+			Enum.PartType.Block
+		).Name = "Fist"
+	end
+
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(torsoWidth * 0.32, legHeight, torsoDepth * 0.6),
+			Vector3.new(side * torsoWidth * 0.24, legHeight / 2, 0),
+			secondary,
+			Enum.PartType.Block
+		).Name = "Leg"
+	end
+
+	-- Floating shoulder plates: the "held together by magic" tell.
+	if rarityIndex >= 3 then
+		for _, side in ipairs({ -1, 1 }) do
+			piece(
+				model,
+				Vector3.new(torsoWidth * 0.42, torsoHeight * 0.16, torsoDepth * 0.7),
+				Vector3.new(side * torsoWidth * 0.6, bodyY + torsoHeight * 0.55, 0),
+				accent,
+				Enum.PartType.Block,
+				Enum.Material.Neon,
+				Vector3.new(0, 0, side * 0.3)
+			).Name = "Plate"
+		end
+	end
+
+	-- Core seam glowing through the chest.
+	piece(
+		model,
+		Vector3.new(torsoWidth * 0.24, torsoWidth * 0.24, torsoWidth * 0.24),
+		Vector3.new(0, bodyY + torsoHeight * 0.1, -torsoDepth * 0.5),
+		accent,
+		Enum.PartType.Ball,
+		Enum.Material.Neon
+	).Name = "Core"
+
+	return headY + headSize
+end
+
+local function buildWisp(model: Model, rng: Random, scale: number, primary: Color3, secondary: Color3, accent: Color3, rarityIndex: number): number
+	-- No legs, no ground contact: a neon core inside a smoked shell, trailed by
+	-- a comet tail and ringed with shards.
+	local coreSize = rng:NextNumber(2.0, 2.8) * scale
+	local floatY = coreSize * 1.6
+
+	local shell = piece(
+		model,
+		Vector3.new(coreSize * 1.7, coreSize * 1.7, coreSize * 1.7),
+		Vector3.new(0, floatY, 0),
+		primary,
+		Enum.PartType.Ball,
+		Enum.Material.ForceField
+	)
+	shell.Name = "Shell"
+	shell.Transparency = 0.55
+
+	piece(model, Vector3.new(coreSize, coreSize, coreSize), Vector3.new(0, floatY, 0), accent, Enum.PartType.Ball, Enum.Material.Neon).Name =
+		"Core"
+
+	-- Eyes float inside the shell — the only anchor for a face.
+	addEyes(model, coreSize, floatY, -coreSize * 0.1, coreSize * 0.24)
+
+	-- Orbiting shards. Static positions; AmbienceService is not involved because
+	-- these move with the creature, not with the plot.
+	local shardCount = 3 + math.min(3, rarityIndex - 1)
+	for i = 1, shardCount do
+		local angle = (i - 1) / shardCount * math.pi * 2
+		piece(
+			model,
+			Vector3.new(coreSize * 0.22, coreSize * 0.55, coreSize * 0.22),
+			Vector3.new(
+				math.cos(angle) * coreSize * 1.5,
+				floatY + math.sin(angle * 2) * coreSize * 0.4,
+				math.sin(angle) * coreSize * 1.5
+			),
+			secondary,
+			Enum.PartType.Block,
+			Enum.Material.Neon,
+			Vector3.new(0.4, angle, 0.3)
+		).Name = "Shard"
+	end
+
+	-- Comet tail, shrinking behind.
+	for i = 1, 4 do
+		local t = i / 4
+		local trail = piece(
+			model,
+			Vector3.new(coreSize * (0.8 - t * 0.55), coreSize * (0.8 - t * 0.55), coreSize * (0.8 - t * 0.55)),
+			Vector3.new(0, floatY - t * coreSize * 0.3, coreSize * (0.9 + i * 0.6)),
+			secondary,
+			Enum.PartType.Ball,
+			Enum.Material.Neon
+		)
+		trail.Name = "Trail"
+		trail.Transparency = 0.2 + t * 0.5
+	end
+
+	return floatY + coreSize
+end
+
+local function buildBrute(model: Model, rng: Random, scale: number, primary: Color3, secondary: Color3, accent: Color3, rarityIndex: number): number
+	-- Upright bruiser: heavy chest, tiny head, huge arms. The Arena silhouette.
+	local legHeight = rng:NextNumber(1.6, 2.2) * scale
+	local chestHeight = rng:NextNumber(2.8, 3.4) * scale
+	local chestWidth = rng:NextNumber(3.2, 3.8) * scale
+	local chestDepth = chestWidth * 0.62
+	local bodyY = legHeight + chestHeight * 0.5
+
+	piece(model, Vector3.new(chestWidth, chestHeight, chestDepth), Vector3.new(0, bodyY, 0), primary, Enum.PartType.Ball).Name =
+		"Chest"
+
+	local headSize = chestWidth * 0.34
+	local headY = bodyY + chestHeight * 0.46
+	piece(model, Vector3.new(headSize, headSize, headSize), Vector3.new(0, headY, -chestDepth * 0.12), primary, Enum.PartType.Ball).Name =
+		"Head"
+	addEyes(model, headSize, headY, -chestDepth * 0.12, headSize * 0.26)
+
+	-- Jaw tusks.
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(headSize * 0.14, headSize * 0.4, headSize * 0.14),
+			Vector3.new(side * headSize * 0.24, headY - headSize * 0.3, -chestDepth * 0.12 - headSize * 0.36),
+			Color3.fromRGB(242, 238, 220),
+			Enum.PartType.Ball,
+			nil,
+			Vector3.new(0.4, 0, 0)
+		).Name = "Tusk"
+	end
+
+	-- Arms: upper mass plus a fist that hangs near the ground.
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(chestWidth * 0.42, chestHeight * 0.5, chestDepth * 0.7),
+			Vector3.new(side * chestWidth * 0.6, bodyY + chestHeight * 0.12, 0),
+			secondary,
+			Enum.PartType.Ball
+		).Name = "Shoulder"
+		piece(
+			model,
+			Vector3.new(chestWidth * 0.34, chestHeight * 0.62, chestDepth * 0.55),
+			Vector3.new(side * chestWidth * 0.68, bodyY - chestHeight * 0.34, chestDepth * 0.08),
+			secondary,
+			Enum.PartType.Ball
+		).Name = "Fist"
+	end
+
+	-- Stubby legs.
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(chestWidth * 0.3, legHeight, chestWidth * 0.3),
+			Vector3.new(side * chestWidth * 0.24, legHeight / 2, 0),
+			secondary,
+			Enum.PartType.Cylinder
+		).Name = "Leg"
+	end
+
+	if rarityIndex >= 3 then
+		for _, side in ipairs({ -1, 1 }) do
+			piece(
+				model,
+				Vector3.new(chestWidth * 0.16, chestHeight * 0.55, chestWidth * 0.16),
+				Vector3.new(side * chestWidth * 0.42, bodyY + chestHeight * 0.55, 0),
+				accent,
+				Enum.PartType.Ball,
+				Enum.Material.Neon,
+				Vector3.new(0, 0, side * 0.4)
+			).Name = "Spike"
+		end
+	end
+
+	return headY + headSize
+end
+
+local BUILDERS: { [string]: (Model, Random, number, Color3, Color3, Color3, number) -> number } = {
+	quadruped = buildQuadruped,
+	serpent = buildSerpent,
+	avian = buildAvian,
+	golem = buildGolem,
+	wisp = buildWisp,
+	brute = buildBrute,
+}
 
 --[[
 	Creates the beast model at the origin. Parts store their local offset as an
@@ -80,15 +623,23 @@ function BeastModelFactory.create(beastId: string, level: number?, variantId: st
 
 	local variant = VariantConfig.get(variantId or "Normal")
 	local variantIndex = VariantConfig.index(variant.id)
+	local rarityIndex = rarityIndexOf(beast.rarity)
 
 	local scale = PlotConfig.RARITY_SCALE[beast.rarity] or 1
 	-- Higher variants read as slightly larger as well as brighter.
 	scale *= 1 + (variantIndex - 1) * 0.07
 
-	local rng = Random.new(seedFor(beastId))
+	local seed = seedFor(beastId)
+	local rng = Random.new(seed)
 	local primary = elementColor(beast.elements[1])
 	local secondary = elementColor(beast.elements[math.min(2, #beast.elements)])
 	local accent = RARITY_COLOR[beast.rarity] or Color3.fromRGB(220, 220, 220)
+
+	-- Nudge each species' hue so two Fire beasts of the same plan are still
+	-- telling apart at a distance.
+	local tint = Color3.fromHSV((seed % 100) / 100, 0.5, 1)
+	primary = primary:Lerp(tint, 0.14)
+	secondary = secondary:Lerp(tint, 0.22)
 
 	-- A non-Normal variant recolours the creature toward its finish, so a Golden
 	-- reads as gold at a glance while keeping its species silhouette.
@@ -102,121 +653,22 @@ function BeastModelFactory.create(beastId: string, level: number?, variantId: st
 	local model = Instance.new("Model")
 	model.Name = beastId
 
-	local bodyLength = rng:NextNumber(3.4, 4.6) * scale
-	local bodyHeight = rng:NextNumber(2.4, 3.2) * scale
-	local bodyWidth = rng:NextNumber(2.4, 3.0) * scale
-	local legHeight = rng:NextNumber(1.4, 2.4) * scale
-
 	-- Root: invisible anchor the whole creature is positioned from.
 	local root = piece(model, Vector3.new(1, 1, 1), Vector3.new(0, 0, 0), primary, Enum.PartType.Block)
 	root.Name = "Root"
 	root.Transparency = 1
 	model.PrimaryPart = root
 
-	local bodyY = legHeight + bodyHeight / 2
-
-	-- Body
-	piece(model, Vector3.new(bodyWidth, bodyHeight, bodyLength), Vector3.new(0, bodyY, 0), primary, Enum.PartType.Ball).Name =
-		"Body"
-
-	-- Head
-	local headSize = bodyHeight * rng:NextNumber(0.72, 0.92)
-	local headZ = -(bodyLength / 2) - headSize * 0.35
-	local headY = bodyY + bodyHeight * rng:NextNumber(0.18, 0.42)
-	piece(model, Vector3.new(headSize, headSize, headSize), Vector3.new(0, headY, headZ), primary, Enum.PartType.Ball).Name =
-		"Head"
-
-	-- Snout
-	piece(
-		model,
-		Vector3.new(headSize * 0.5, headSize * 0.45, headSize * 0.6),
-		Vector3.new(0, headY - headSize * 0.16, headZ - headSize * 0.5),
-		secondary,
-		Enum.PartType.Ball
-	).Name = "Snout"
-
-	-- Eyes
-	local eyeOffset = headSize * 0.26
-	for _, side in ipairs({ -1, 1 }) do
-		piece(
-			model,
-			Vector3.new(headSize * 0.26, headSize * 0.26, headSize * 0.26),
-			Vector3.new(side * eyeOffset, headY + headSize * 0.12, headZ - headSize * 0.34),
-			Color3.fromRGB(250, 250, 255),
-			Enum.PartType.Ball
-		).Name = "Eye"
-		piece(
-			model,
-			Vector3.new(headSize * 0.13, headSize * 0.13, headSize * 0.13),
-			Vector3.new(side * eyeOffset, headY + headSize * 0.12, headZ - headSize * 0.43),
-			Color3.fromRGB(18, 14, 28),
-			Enum.PartType.Ball
-		).Name = "Pupil"
-	end
-
-	-- Legs
-	local legInsetX = bodyWidth * 0.3
-	local legInsetZ = bodyLength * 0.28
-	for _, sx in ipairs({ -1, 1 }) do
-		for _, sz in ipairs({ -1, 1 }) do
-			piece(
-				model,
-				Vector3.new(bodyWidth * 0.22, legHeight, bodyWidth * 0.22),
-				Vector3.new(sx * legInsetX, legHeight / 2, sz * legInsetZ),
-				secondary,
-				Enum.PartType.Cylinder
-			).Name = "Leg"
-		end
-	end
-
-	-- Tail
-	piece(
-		model,
-		Vector3.new(bodyWidth * 0.3, bodyWidth * 0.3, bodyLength * 0.7),
-		Vector3.new(0, bodyY + bodyHeight * 0.1, bodyLength / 2 + bodyLength * 0.24),
-		secondary,
-		Enum.PartType.Ball
-	).Name = "Tail"
-
-	-- Crest / horn — bigger and brighter the rarer the beast.
-	local rarityIndex = table.find(
-		{ "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret" },
-		beast.rarity
-	) or 1
-	if rarityIndex >= 3 then
-		piece(
-			model,
-			Vector3.new(headSize * 0.2, headSize * 0.8, headSize * 0.2),
-			Vector3.new(0, headY + headSize * 0.62, headZ + headSize * 0.06),
-			accent,
-			Enum.PartType.Ball,
-			Enum.Material.Neon
-		).Name = "Horn"
-	end
-
-	-- Wings for airborne / high-rarity species.
-	local hasWings = table.find(beast.elements, "Air") ~= nil or rarityIndex >= 5
-	if hasWings then
-		for _, side in ipairs({ -1, 1 }) do
-			local wing = piece(
-				model,
-				Vector3.new(bodyWidth * 1.5, bodyHeight * 0.16, bodyLength * 0.62),
-				Vector3.new(side * bodyWidth * 0.85, bodyY + bodyHeight * 0.36, bodyLength * 0.04),
-				accent,
-				Enum.PartType.Block,
-				Enum.Material.Neon
-			)
-			wing.Name = "Wing"
-			wing.Transparency = 0.28
-		end
-	end
+	local form = formFor(beast, seed)
+	local builder = BUILDERS[form] or buildQuadruped
+	local height = builder(model, rng, scale, primary, secondary, accent, rarityIndex)
 
 	-- Sparkles mark every variant above Normal — cheap, readable prestige.
 	if variant.sparkle then
 		local sparkleHost = piece(
 			model,
 			Vector3.new(0.6, 0.6, 0.6),
-			Vector3.new(0, bodyY + bodyHeight * 0.5, 0),
+			Vector3.new(0, height * 0.6, 0),
 			variant.color,
 			Enum.PartType.Ball,
 			Enum.Material.Neon
@@ -248,24 +700,19 @@ function BeastModelFactory.create(beastId: string, level: number?, variantId: st
 	if range > 0 then
 		local aura = piece(
 			model,
-			Vector3.new(bodyWidth * 1.5, bodyWidth * 1.5, bodyWidth * 1.5),
-			Vector3.new(0, bodyY, 0),
+			Vector3.new(height * 0.7, height * 0.7, height * 0.7),
+			Vector3.new(0, height * 0.55, 0),
 			accent,
 			Enum.PartType.Ball,
 			Enum.Material.Neon
 		)
 		aura.Name = "Aura"
-		aura.Transparency = 0.86
+		aura.Transparency = 0.88
 		Build.glow(aura, accent, range * scale, 2 + rarityIndex * 0.4)
 	end
 
 	-- Nameplate: variant-prefixed name in the variant/rarity colour.
-	local plate = Build.label(
-		root,
-		VariantConfig.label(variant.id, beast.name),
-		Vector2.new(240, 52),
-		bodyY + bodyHeight + 2.4
-	)
+	local plate = Build.label(root, VariantConfig.label(variant.id, beast.name), Vector2.new(240, 52), height + 2.4)
 	local plateText = plate:FindFirstChild("Text") :: TextLabel
 	plateText.TextColor3 = accent
 	plate.MaxDistance = 140
@@ -273,7 +720,8 @@ function BeastModelFactory.create(beastId: string, level: number?, variantId: st
 	model:SetAttribute("BeastId", beastId)
 	model:SetAttribute("Rarity", beast.rarity)
 	model:SetAttribute("Variant", variant.id)
-	model:SetAttribute("Height", bodyY + bodyHeight)
+	model:SetAttribute("Form", form)
+	model:SetAttribute("Height", height)
 
 	return model
 end
@@ -285,9 +733,16 @@ function BeastModelFactory.pivot(model: Model, cframe: CFrame)
 		if child:IsA("BasePart") then
 			local offset = child:GetAttribute("Offset")
 			if typeof(offset) == "Vector3" then
-				local isCylinder = child:IsA("Part") and child.Shape == Enum.PartType.Cylinder
-				-- Cylinders are X-aligned; stand legs upright.
-				local rotation = isCylinder and CFrame.Angles(0, 0, math.rad(90)) or CFrame.identity
+				local rotation = CFrame.identity
+				local stored = child:GetAttribute("Rot")
+				if typeof(stored) == "Vector3" then
+					rotation = CFrame.Angles(stored.X, stored.Y, stored.Z)
+				end
+				-- Cylinders are X-aligned; stand them upright before any per-piece
+				-- rotation, so a "leg" is a leg whatever else was asked for.
+				if child:IsA("Part") and child.Shape == Enum.PartType.Cylinder then
+					rotation *= CFrame.Angles(0, 0, math.rad(90))
+				end
 				child.CFrame = cframe * CFrame.new(offset) * rotation
 			end
 		end
