@@ -1,8 +1,9 @@
 # 🔮 Fuse a Beast
 
-> An idle **element-fusion discovery-collector** for Roblox. Fuse element shards
-> to *discover* wild beasts, display them to power up your idle Altar, and chase
-> the rarest fusions on the server.
+> A **3D creature-sanctuary tycoon** for Roblox. Collect element shards from the
+> nodes on your plot, fuse them at your Altar to *discover* wild beasts, and grow
+> a sanctuary they physically live in — where a Mythic towers over the treeline
+> and every visitor can see it.
 
 Built as a complete, production-oriented Roblox studio project — chosen from
 market research as the highest expected-ROI opportunity on the 2026 platform:
@@ -25,35 +26,55 @@ charts don't yet occupy.
 
 The breakout hits of 2025-26 share a DNA: a dead-simple loop, a reason to return
 tomorrow, a shareable moment, cosmetics-first monetization, and weekly updates.
-*Grow a Garden* proved **offline progression** drives return habits;
-*Steal a Brainrot* proved **collectible + social tension** goes viral.
+*Grow a Garden* proved **offline progression** drives return habits and that a
+**plot you physically tend** beats an inventory screen; *Steal a Brainrot* proved
+**value embodied in objects other players can see** goes viral. Tycoons remain the
+most-loved structure on the platform.
+
 **Discovery/combination crafting** is proven addictive off-platform yet rare among
-Roblox's top earners — so Fuse a Beast combines all of it:
+Roblox's top earners — so Fuse a Beast puts that engine inside the tycoon shell
+Roblox players already love:
 
 ```
-Altar generates Essence + Shards (online + OFFLINE)
-      → Fuse 2-3 elements → DISCOVER a beast (rarity roll!)
-      → Display beasts in your Sanctuary → boosts idle generation
-      → Merge duplicates / Upgrade Altar / Ascend → chase rarer beasts
+Element nodes on your plot eject SHARDS  →  run over them to collect
+      → walk to your ALTAR, fuse 2-3 elements → DISCOVER a beast
+      → the beast physically SPAWNS in your sanctuary and wanders it
+      → it drops ESSENCE ORBS you collect + raises your passive rate
+      → step on TYCOON PADS to unlock nodes, tiers and habitat space
+      → your plot visibly grows → chase rarer, bigger, brighter beasts
 ```
 
-Content (beasts, elements, recipes, events) is **pure config**, so weekly updates
-are data edits — which is exactly what makes the update cadence sustainable.
+**Rarity is physical.** A Common is knee-high and dull. A Mythic towers and glows
+brightly enough to spot from across the island. Your collection isn't a number in
+a menu — it's a landmark other players walk past.
+
+Content (beasts, elements, recipes, events, plot layout, the upgrade ladder) is
+**pure config**, so weekly updates are data edits — which is what makes the
+cadence sustainable.
 
 ## Feature highlights
 
-- **Idle engine** with true **offline earnings** (capped, gamepass-extendable) and
-  a smooth client-predicted essence counter.
+- **A real 3D world**, generated procedurally at server start — an island with a
+  central Hub and Arena, and eight sanctuaries you walk between. No art assets
+  required to run.
+- **Physical collection gameplay:** element nodes eject shard pickups, beasts
+  drop essence orbs, and you run around gathering them.
+- **Tycoon progression:** step on a buy-pad, pay essence, and your sanctuary
+  physically grows — new element nodes, faster node tiers, more habitat space.
+- **Creatures that live in the world:** procedurally built beasts that wander,
+  bob and glow, scaled by rarity. Anchored and driven by one shared loop, so a
+  full island costs no physics.
+- **Idle engine** with true **offline earnings** (capped, gamepass-extendable) —
+  active play pays ~40% more, but stepping away is still rewarded.
 - **Discovery-fusion** engine: 6 elements, 68 beasts across 7 rarities
   (Common → **Secret**), signature "recipe" combos, and a luck-driven rarity tail.
-- **Collection & Sanctuary:** Beastdex, display-for-boost synergy, and
-  **merge-for-power** so duplicates matter.
-- **Progression:** Altar levels + **Ascension** (rebirth) with permanent bonuses.
+- **Safe sanctuaries:** nobody can rob your plot. Competition lives in the Arena
+  instead, so nobody gets griefed out of the game.
 - **Retention:** login streaks, deterministic daily quests, achievements → badges.
 - **Monetization:** gamepasses + developer products + receipts + timed boosts +
   Premium perks — all multiplier/convenience/cosmetic, **never pay-to-win**.
 - **Server-authoritative & anti-exploit:** rate-limited, validated remotes;
-  session-locked data; idempotent purchases.
+  session-locked data; idempotent purchases; owner-only pickups and pads.
 
 ## Architecture at a glance
 
@@ -86,20 +107,23 @@ fuse-a-beast/
 ├── default.project.json      # Rojo mapping
 ├── wally.toml                # (optional) ProfileStore dependency
 ├── docs/                     # research, GDD, architecture, review, install
+├── design/                   # UI mockups + design tokens
 └── src/
     ├── ReplicatedStorage/Shared/   # Config, Net, Util (shared client+server)
-    ├── ServerScriptService/Server/ # bootstrap, Data, Services, ServerNet
+    ├── ServerScriptService/Server/ # bootstrap, Data, World, Services, ServerNet
+    │   └── World/                  # procedural island, plots, beast models
     └── StarterPlayer/.../Client/   # bootstrap, ClientState, Controllers, UI
 ```
 
 ## Status & roadmap
 
-**v0.1 (this repo):** polished core loop — generation, fusion/discovery,
-collection, display boost, merge, altar, ascension, quests, dailies,
-monetization, analytics, anti-exploit.
+**v0.2 (this repo):** the 3D sanctuary tycoon — procedural island, plots,
+physical shard/essence collection, walk-up Fusion Altar, wandering beasts scaled
+by rarity, tycoon buy-pads, plus the full v0.1 backend (fusion engine, economy,
+offline earnings, quests, dailies, monetization, analytics, anti-exploit).
 
-**Next:** trading + Sanctuary visiting (v0.2) → first live event (v0.3) → element
-mastery & cosmetics (v0.4). Weekly beast/recipe drops throughout. See the GDD.
+**Next:** Arena events (v0.3) → sanctuary decoration cosmetics + visiting rewards
+(v0.4) → trading. Weekly beast/recipe drops throughout. See the GDD.
 
 ## License
 

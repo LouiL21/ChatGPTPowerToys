@@ -4,6 +4,51 @@ All notable changes to Fuse a Beast are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] — 2026-08-30
+
+**The 3D pivot.** v0.1 was a mobile idle game that happened to run on Roblox —
+a category error, since on Roblox the 3D space *is* the game. The fusion engine
+and full backend are unchanged; they now sit inside a sanctuary tycoon players
+walk around.
+
+### Added — World
+- `PlotConfig`: island/plot layout, node positions, tycoon upgrade ladder,
+  pickup caps, and the rarity→physical-size/glow mapping.
+- `WorldBuilder`: procedurally generates the island, sea, central Hub, Arena ring
+  and paths at server start; sets dusk lighting and atmosphere.
+- `PlotBuilder`: builds a sanctuary — ground, walls, Fusion Altar with orbiting
+  element motes and a ProximityPrompt, element node structures, tycoon buy-pads,
+  entrance nameplate.
+- `BeastModelFactory`: builds creatures from primitives with deterministic
+  per-species variation. **Rarity is physical** — scale and glow radius grow with
+  rarity so status is visible across the island.
+
+### Added — Gameplay services
+- `PlotService`: island build, per-player plot assignment, progression applied to
+  geometry, teleport home, Altar prompt binding, clean release.
+- `PickupService`: physical shard/essence collectibles, owner-only collection,
+  per-plot cap, one shared animation loop.
+- `NodeService`: unlocked nodes eject shard pickups on a tier-scaled, staggered
+  interval.
+- `BeastService`: displayed beasts spawn as wandering creatures that drop essence
+  orbs; new discoveries auto-join the sanctuary when a slot is free; altar
+  materialisation burst.
+- `TycoonService`: owner-only buy-pads that charge essence and physically unlock
+  nodes, node tiers and habitat capacity.
+
+### Changed
+- Online shards now come from physically collecting node drops; passive shard
+  accrual is reserved for offline catch-up, so both play styles are rewarded.
+- The fusion panel opens by walking to your Altar, rather than always being on
+  screen.
+- Habitat capacity is the single source of truth for display slots (tycoon
+  purchases + gamepass bonus).
+- Social model chosen: **safe sanctuaries + Arena competition** (no raiding), to
+  avoid the griefing that churns players out of steal-'em-up games.
+
+### Added — Design
+- UI redesign mockups and design tokens under `design/`.
+
 ## [0.1.0] — 2026-07-17
 
 First playable — the polished core loop, built to be launched and then iterated
