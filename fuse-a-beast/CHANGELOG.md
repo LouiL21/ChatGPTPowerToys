@@ -4,6 +4,47 @@ All notable changes to Fuse a Beast are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] — 2026-08-30
+
+**First playtest pass.** Everything here comes from playing 0.3.0 and writing
+down what was confusing, invisible or unrewarding.
+
+### Fixed
+- **The Altar upgrade ladder was unreachable.** The nav rebuild in 0.3.0 dropped
+  the Altar, Ascend and Collect buttons while the remotes stayed live, so altar
+  levels and Ascension could not be bought at all. New **Sanctuary** panel
+  restores all three and shows level, rate, upgrade cost, Ascension requirement
+  and habitat capacity.
+- **The Chamber never showed what a fusion costs** — it just failed quietly when
+  you could not afford one. The price now mirrors the server formula, shows
+  against your balance, and rides on the FUSE button.
+
+### Changed — Pacing
+- The Fusion Chamber is now buy-pad **one at 250 essence** (was pad two at 900).
+  Fusing two beasts is the game; it has to be reachable in the first couple of
+  minutes.
+- Habitat space is pad two, and the base allowance rises 4 → 6 with a wider
+  wander radius.
+- Buy-pads are 15×15 on raised plinths and wrap into rows of six instead of
+  eleven crammed across the plot. They show an abbreviated cost and light up
+  gold when affordable.
+
+### Changed — Feel
+- **Essence orbs are worth something.** An orb's value was the plot rate split
+  evenly across displayed beasts, so every beast you added made every orb
+  smaller. An orb is now worth what the *dropping beast* contributes, scaled by
+  its rarity and variant — and it looks the part: bigger, variant-tinted,
+  sparkling with value.
+- Pickups fly to their owner inside 16 studs and pop a floating **+N** where
+  they were taken. Touch and magnet share one guarded credit path.
+- **Every species has its own silhouette.** All 68 beasts shared one quadruped
+  body with jittered dimensions. Each now resolves to a body plan — quadruped,
+  serpent, avian, golem, wisp or brute — from its primary element, with a
+  per-species hue nudge. Legendary+ always takes the more dramatic plan.
+- Lighting gains bloom, a colour grade and sun rays; plots gain scattered trees,
+  rock clusters and lit wall capstones; the HUD's bare numbers became framed
+  chips; nav buttons became glyph-over-label.
+
 ## [0.3.0] — 2026-08-30
 
 **Beasts became the currency of the game.** Fusing raw shards made creatures

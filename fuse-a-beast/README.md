@@ -61,7 +61,8 @@ cadence sustainable.
   central Hub and Arena, and eight sanctuaries you walk between. No art assets
   required to run.
 - **Physical collection gameplay:** element nodes eject shard pickups, beasts
-  drop essence orbs, and you run around gathering them.
+  drop essence orbs worth what *that beast* earns you, and both fly to you when
+  you get close and pop a floating `+N` when taken.
 - **Fusion Chamber:** combine two beasts you own. Same species climbs the
   **variant ladder** (Normal → Shiny → Golden → Rainbow → Void); two different
   species produce a **hybrid** rolled from their combined elements. Duplicates
@@ -71,9 +72,10 @@ cadence sustainable.
   collected and fused, never from the shop.
 - **Tycoon progression:** step on a buy-pad, pay essence, and your sanctuary
   physically grows — new element nodes, faster node tiers, more habitat space.
-- **Creatures that live in the world:** procedurally built beasts that wander,
-  bob and glow, scaled by rarity. Anchored and driven by one shared loop, so a
-  full island costs no physics.
+- **Creatures that live in the world:** every species resolves to its own body
+  plan — quadruped, serpent, avian, golem, wisp or brute — chosen from its
+  primary element, then scaled and lit by rarity. Anchored and driven by one
+  shared loop, so a full island costs no physics.
 - **Idle engine** with true **offline earnings** (capped, gamepass-extendable) —
   active play pays ~40% more, but stepping away is still rewarded.
 - **Discovery-fusion** engine: 6 elements, 68 beasts across 7 rarities
