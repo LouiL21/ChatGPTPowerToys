@@ -726,6 +726,58 @@ function BeastModelFactory.create(beastId: string, level: number?, variantId: st
 	return model
 end
 
+--[[
+	Builds an Arena boss.
+
+	Bosses reuse the same body plans as beasts, at a much larger scale and in a
+	darkened, ember-lit palette, so they read as the same kind of creature the
+	player collects — just bigger and angrier. `tier` is the boss's rung on the
+	ladder (1..n) and drives size, so The Hollow towers over the Clay Sentinel.
+
+	The rarity index is forced to the top, which is what switches on every
+	plan's extras: crests, floating plates, spikes and shoulder armour.
+]]
+function BeastModelFactory.createBoss(boss, tier: number): Model?
+	local scale = 2.4 + tier * 0.45
+	local rng = Random.new(seedFor(boss.id))
+
+	local element = elementColor(boss.element)
+	local primary = element:Lerp(Color3.fromRGB(24, 18, 34), 0.55)
+	local secondary = element:Lerp(Color3.fromRGB(12, 9, 20), 0.7)
+	local accent = Color3.fromRGB(255, 120, 60) -- ember, the shared "boss" tell
+
+	local model = Instance.new("Model")
+	model.Name = "Boss_" .. boss.id
+
+	local root = piece(model, Vector3.new(1, 1, 1), Vector3.new(0, 0, 0), primary, Enum.PartType.Block)
+	root.Name = "Root"
+	root.Transparency = 1
+	model.PrimaryPart = root
+
+	local builder = BUILDERS[boss.form] or buildBrute
+	local height = builder(model, rng, scale, primary, secondary, accent, #RARITY_ORDER)
+
+	-- Menace aura: large, dim and ember-coloured, so a boss is lit from within
+	-- rather than glowing like a collectible.
+	local aura = piece(
+		model,
+		Vector3.new(height * 0.85, height * 0.85, height * 0.85),
+		Vector3.new(0, height * 0.5, 0),
+		accent,
+		Enum.PartType.Ball,
+		Enum.Material.Neon
+	)
+	aura.Name = "Aura"
+	aura.Transparency = 0.92
+	Build.glow(aura, accent, 26, 2)
+
+	model:SetAttribute("BossId", boss.id)
+	model:SetAttribute("Rarity", "Boss")
+	model:SetAttribute("Height", height)
+
+	return model
+end
+
 -- Positions every piece from its stored local offset. Cheap enough to call on a
 -- movement tick for every beast on the server.
 function BeastModelFactory.pivot(model: Model, cframe: CFrame)

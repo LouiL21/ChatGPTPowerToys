@@ -24,6 +24,8 @@ CombatConfig.RarityStats = {
 }
 
 CombatConfig.TURN_INTERVAL = 0.85 -- seconds between exchanges
+CombatConfig.OPENING_PAUSE = 1.6 -- beat before the first blow, so you see them square up
+CombatConfig.VICTORY_HOLD = 2.8 -- how long the result sits before the Arena clears
 CombatConfig.MAX_TURNS = 30 -- draw guard so a battle always terminates
 CombatConfig.CRIT_CHANCE = 0.18
 CombatConfig.CRIT_MULTIPLIER = 1.8
@@ -42,12 +44,16 @@ CombatConfig.Advantage = {
 }
 
 -- ── Boss ladder (PvE, always available so solo players can battle) ────────
+-- `form` is the body plan BeastModelFactory builds the boss from. Hand-assigned
+-- rather than derived, because the whole point of a five-boss ladder is that
+-- each one is a different thing to look at: a slab golem, then a coiling
+-- serpent, then a brawler, then a raptor, then something barely there.
 CombatConfig.Bosses = {
-	{ id = "clay_sentinel", name = "Clay Sentinel", power = 26, health = 260, element = "Earth", reward = { gems = 8, essence = 1500 } },
-	{ id = "tide_warden", name = "Tide Warden", power = 70, health = 620, element = "Water", reward = { gems = 18, essence = 9000 } },
-	{ id = "ashen_maw", name = "Ashen Maw", power = 160, health = 1500, element = "Fire", reward = { gems = 40, essence = 60000 } },
-	{ id = "storm_herald", name = "Storm Herald", power = 380, health = 3400, element = "Air", reward = { gems = 90, essence = 400000 } },
-	{ id = "the_hollow", name = "The Hollow", power = 900, health = 8000, element = "Void", reward = { gems = 220, essence = 3000000 } },
+	{ id = "clay_sentinel", name = "Clay Sentinel", form = "golem", power = 26, health = 260, element = "Earth", reward = { gems = 8, essence = 1500 } },
+	{ id = "tide_warden", name = "Tide Warden", form = "serpent", power = 70, health = 620, element = "Water", reward = { gems = 18, essence = 9000 } },
+	{ id = "ashen_maw", name = "Ashen Maw", form = "brute", power = 160, health = 1500, element = "Fire", reward = { gems = 40, essence = 60000 } },
+	{ id = "storm_herald", name = "Storm Herald", form = "avian", power = 380, health = 3400, element = "Air", reward = { gems = 90, essence = 400000 } },
+	{ id = "the_hollow", name = "The Hollow", form = "wisp", power = 900, health = 8000, element = "Void", reward = { gems = 220, essence = 3000000 } },
 }
 
 CombatConfig.BOSS_COOLDOWN = 60 -- seconds between boss attempts
