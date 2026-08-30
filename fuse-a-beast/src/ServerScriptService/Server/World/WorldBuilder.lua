@@ -43,25 +43,29 @@ end
 	it is just no longer overexposed.
 ]]
 local function buildSky()
-	Lighting.Ambient = Color3.fromRGB(84, 76, 112)
-	Lighting.OutdoorAmbient = Color3.fromRGB(112, 102, 148)
-	Lighting.Brightness = 1.1
-	Lighting.ExposureCompensation = -0.25
-	Lighting.ClockTime = 19.4 -- twilight: sun on the horizon, sky going violet
+	Lighting.Ambient = Color3.fromRGB(104, 96, 136)
+	Lighting.OutdoorAmbient = Color3.fromRGB(142, 132, 180)
+	Lighting.Brightness = 1.7
+	Lighting.ExposureCompensation = -0.05
+	-- Half an hour earlier: the sun is still low enough for the violet-and-amber
+	-- band, but above the horizon rather than sitting on it. Most of the extra
+	-- light comes from ambient and a thinner atmosphere, not from turning the
+	-- sun up, so the neon keeps its contrast instead of washing out again.
+	Lighting.ClockTime = 18.9
 	Lighting.GeographicLatitude = 12
-	Lighting.EnvironmentDiffuseScale = 0.6
-	Lighting.EnvironmentSpecularScale = 0.4
-	Lighting.FogColor = Color3.fromRGB(48, 38, 78)
-	Lighting.FogEnd = 1400
-	Lighting.FogStart = 460
+	Lighting.EnvironmentDiffuseScale = 0.8
+	Lighting.EnvironmentSpecularScale = 0.5
+	Lighting.FogColor = Color3.fromRGB(66, 54, 100)
+	Lighting.FogEnd = 1600
+	Lighting.FogStart = 560
 
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
-	atmosphere.Density = 0.38
-	atmosphere.Offset = 0.2
-	atmosphere.Haze = 2.2
+	atmosphere.Density = 0.3
+	atmosphere.Offset = 0.25
+	atmosphere.Haze = 1.7
 	atmosphere.Glare = 0 -- glare is what smeared the horizon into white
-	atmosphere.Color = Color3.fromRGB(178, 162, 214)
-	atmosphere.Decay = Color3.fromRGB(84, 66, 126)
+	atmosphere.Color = Color3.fromRGB(196, 182, 228)
+	atmosphere.Decay = Color3.fromRGB(102, 84, 146)
 	atmosphere.Parent = Lighting
 
 	-- No skybox textures: leaving the faces blank lets Roblox render its own
