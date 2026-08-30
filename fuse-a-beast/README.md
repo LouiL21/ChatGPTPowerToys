@@ -37,11 +37,14 @@ Roblox players already love:
 
 ```
 Element nodes on your plot eject SHARDS  →  run over them to collect
-      → walk to your ALTAR, fuse 2-3 elements → DISCOVER a beast
-      → the beast physically SPAWNS in your sanctuary and wanders it
-      → it drops ESSENCE ORBS you collect + raises your passive rate
-      → step on TYCOON PADS to unlock nodes, tiers and habitat space
-      → your plot visibly grows → chase rarer, bigger, brighter beasts
+      → walk to your ALTAR → SUMMON a beast from those shards
+      → it SPAWNS in your sanctuary, wanders, and drops ESSENCE ORBS
+      → take TWO beasts to the FUSION CHAMBER:
+            same species  → upgrade its VARIANT
+                            (Normal → Shiny → Golden → Rainbow → Void)
+            two species   → a HYBRID rolled from their combined elements
+      → equip your best as a PET that follows you and fights in the ARENA
+      → step on TYCOON PADS to grow the plot → chase rarer, bigger beasts
 ```
 
 **Rarity is physical.** A Common is knee-high and dull. A Mythic towers and glows
@@ -59,6 +62,13 @@ cadence sustainable.
   required to run.
 - **Physical collection gameplay:** element nodes eject shard pickups, beasts
   drop essence orbs, and you run around gathering them.
+- **Fusion Chamber:** combine two beasts you own. Same species climbs the
+  **variant ladder** (Normal → Shiny → Golden → Rainbow → Void); two different
+  species produce a **hybrid** rolled from their combined elements. Duplicates
+  are fuel, never junk.
+- **Pets & combat:** your best beast follows you around and fights in the Arena
+  — a boss ladder plus consensual player duels. Power comes only from what you
+  collected and fused, never from the shop.
 - **Tycoon progression:** step on a buy-pad, pay essence, and your sanctuary
   physically grows — new element nodes, faster node tiers, more habitat space.
 - **Creatures that live in the world:** procedurally built beasts that wander,

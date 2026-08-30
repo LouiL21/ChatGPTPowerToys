@@ -4,6 +4,46 @@ All notable changes to Fuse a Beast are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-08-30
+
+**Beasts became the currency of the game.** Fusing raw shards made creatures
+disposable; now you catch them and combine *them*, so every beast matters.
+
+### Added — Core loop
+- **Fusion Chamber** (`FusionChamberService`): combine two owned beasts. Same
+  species + variant rolls a variant upgrade; two different species produce a
+  hybrid rolled from their combined elements. A failed variant fusion returns
+  one beast, so it costs one rather than two.
+- **Variants** (`VariantConfig`): Normal → Shiny → Golden → Rainbow → Void, each
+  multiplying combat power and sanctuary essence output, with falling upgrade
+  odds. Endless progression that costs no new content.
+- The Altar is now a **Summoning Altar**; `FusionService.rollFromElements` is
+  shared with the Chamber so drop rates can never drift between them.
+
+### Added — Pets & combat
+- `PetService`: your active beast follows you and is your Arena fighter.
+- `BattleService`: a five-boss PvE ladder (always available so solo players are
+  never blocked) plus consensual duels, with crits, element advantage and
+  damage variance so upsets are possible. Losing still pays; beasts are never
+  lost.
+- `BattleController`: live health bars, rolling hit log, duel prompt.
+
+### Added — Presentation
+- `Theme` + `Components`: chunky tactile UI system (thick strokes, hard offset
+  shadows, press feedback) replacing the flat dashboard look.
+- UIController rebuilt with seven panels; the Chamber previews its outcome
+  before you commit, which is how the variant/hybrid distinction is taught.
+- `AmbienceService`: altar crystals breathe, motes orbit, node crystals bob,
+  arena pillars pulse — all from one shared Heartbeat pass.
+- Variants recolour, sparkle and glow in-world.
+
+### Changed
+- Profile v2 with a forward-only, idempotent `Migrations` module; v1 saves fold
+  old merge levels back into copies rather than losing them.
+- Monetisation reworked: time, convenience, luck and looks only, with a cosmetic
+  gem sink and an explicit rule that Arena power is never purchasable.
+- Removed the uncompletable "visit another sanctuary" daily.
+
 ## [0.2.0] — 2026-08-30
 
 **The 3D pivot.** v0.1 was a mobile idle game that happened to run on Roblox —

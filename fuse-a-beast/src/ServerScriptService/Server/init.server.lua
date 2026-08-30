@@ -41,6 +41,7 @@ local TycoonService = require(Services.TycoonService)
 local PetService = require(Services.PetService)
 local FusionChamberService = require(Services.FusionChamberService)
 local BattleService = require(Services.BattleService)
+local AmbienceService = require(Services.AmbienceService)
 
 -- Registry: every service is reachable as Registry.<Name>.
 local Registry = {}
@@ -65,6 +66,7 @@ local allServices = {
 	PetService,
 	FusionChamberService,
 	BattleService,
+	AmbienceService,
 }
 for _, service in ipairs(allServices) do
 	Registry[service.Name] = service
