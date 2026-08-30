@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local PlotConfig = require(Shared.Config.PlotConfig)
 local ElementConfig = require(Shared.Config.ElementConfig)
+local Format = require(Shared.Util.Format)
 
 local Build = require(script.Parent.Build)
 
@@ -265,14 +266,36 @@ local function buildNode(model: Model, origin: CFrame, spec): NodeHandle
 end
 
 local function buildPad(model: Model, origin: CFrame, spec, order: number): PadHandle
-	local count = #PlotConfig.BuyPads
-	local spread = (count - 1) * PlotConfig.PAD_SPACING
-	local x = -spread / 2 + (order - 1) * PlotConfig.PAD_SPACING
-	local base = toWorld(origin, Vector3.new(x, 0, PlotConfig.PAD_ROW_Z))
+	-- Pads wrap into rows so each one can be large enough to read and to stand
+	-- on. Rows march inward from the plot entrance, so the cheap early pads are
+	-- the first thing a new player walks over.
+	local perRow = PlotConfig.PAD_PER_ROW
+	local total = #PlotConfig.BuyPads
+	local row = math.floor((order - 1) / perRow)
+	local column = (order - 1) % perRow
+	-- The last row is usually short; centre it rather than leaving a gap.
+	local inThisRow = math.min(perRow, total - row * perRow)
+	local spread = (inThisRow - 1) * PlotConfig.PAD_SPACING
+	local x = -spread / 2 + column * PlotConfig.PAD_SPACING
+	local z = PlotConfig.PAD_ROW_Z - row * PlotConfig.PAD_ROW_GAP
+	local base = toWorld(origin, Vector3.new(x, 0, z))
+
+	local size = PlotConfig.PAD_SIZE
+
+	-- A recessed plinth under the pad reads as a built object rather than a
+	-- decal lying on the grass.
+	Build.part({
+		size = Vector3.new(size + 2, 1, size + 2),
+		position = base + Vector3.new(0, 0.5, 0),
+		color = PlotConfig.COLORS.plotRim,
+		material = Enum.Material.Slate,
+		name = "PadPlinth",
+		parent = model,
+	})
 
 	local pad = Build.part({
-		size = Vector3.new(9, 1, 9),
-		position = base + Vector3.new(0, 0.5, 0),
+		size = Vector3.new(size, 1, size),
+		position = base + Vector3.new(0, 1.2, 0),
 		color = PlotConfig.COLORS.locked,
 		material = Enum.Material.Neon,
 		canCollide = false,
@@ -281,9 +304,9 @@ local function buildPad(model: Model, origin: CFrame, spec, order: number): PadH
 	})
 	pad.Transparency = 0.25
 
-	local billboard = Build.label(pad, spec.label, Vector2.new(190, 70), 5)
+	local billboard = Build.label(pad, spec.label, Vector2.new(260, 96), 6.5)
 	local label = billboard:FindFirstChild("Text") :: TextLabel
-	label.Text = string.format("%s\n%d", spec.label, spec.cost)
+	label.Text = string.format("%s\n%s", spec.label, Format.abbreviate(spec.cost))
 
 	return { id = spec.id, pad = pad, label = label, purchased = false }
 end

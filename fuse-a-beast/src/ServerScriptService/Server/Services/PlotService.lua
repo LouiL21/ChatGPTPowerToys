@@ -16,6 +16,7 @@ local Shared = ReplicatedStorage.Shared
 local PlotConfig = require(Shared.Config.PlotConfig)
 local GameConfig = require(Shared.Config.GameConfig)
 local Signal = require(Shared.Util.Signal)
+local Format = require(Shared.Util.Format)
 local Logger = require(Shared.Util.Logger).new("Plot")
 
 local World = script.Parent.Parent.World
@@ -82,15 +83,23 @@ function PlotService:applyProgression(player: Player)
 		end
 	end
 
-	-- Buy pads: purchased ones go green and stop charging.
+	-- Buy pads: purchased ones go green and stop charging. An unpurchased pad the
+	-- player can afford right now lights up gold, so "what can I buy" is legible
+	-- from across the plot instead of requiring a walk-and-read of every pad.
+	local essence = data.currencies.essence or 0
 	for _, spec in ipairs(PlotConfig.BuyPads) do
 		local pad = handle.pads[spec.id]
 		if pad then
 			local purchased = data.plot.purchasedPads[spec.id] == true
+			local affordable = not purchased and essence >= spec.cost
 			pad.purchased = purchased
-			pad.pad.Color = purchased and Color3.fromRGB(77, 191, 89) or PlotConfig.COLORS.locked
-			pad.pad.Transparency = purchased and 0.6 or 0.25
-			pad.label.Text = purchased and (spec.label .. "\nOWNED") or string.format("%s\n%d", spec.label, spec.cost)
+			pad.pad.Color = purchased and Color3.fromRGB(77, 191, 89)
+				or (affordable and PlotConfig.COLORS.affordable or PlotConfig.COLORS.locked)
+			pad.pad.Transparency = purchased and 0.6 or (affordable and 0.1 or 0.35)
+			pad.label.Text = purchased and (spec.label .. "\n✔ OWNED")
+				or string.format("%s\n%s essence", spec.label, Format.abbreviate(spec.cost))
+			pad.label.TextColor3 = purchased and Color3.fromRGB(150, 245, 165)
+				or (affordable and Color3.fromRGB(255, 226, 150) or Color3.fromRGB(196, 190, 220))
 		end
 	end
 
@@ -253,6 +262,34 @@ function PlotService:Start()
 
 	Players.PlayerRemoving:Connect(function(player)
 		self:_release(player)
+	end)
+
+	-- Keep the "you can afford this" pad highlight live. Essence changes
+	-- constantly, and a highlight that only refreshes on purchase would be wrong
+	-- almost all the time. A 2s sweep over at most 8 plots is far cheaper than
+	-- pushing pad state on every currency change.
+	task.spawn(function()
+		while true do
+			task.wait(2)
+			for userId, index in pairs(_indexByUser) do
+				local player = Players:GetPlayerByUserId(userId)
+				local handle = _plots[index]
+				local data = player and Registry.DataService:get(player)
+				if player and handle and data then
+					local essence = data.currencies.essence or 0
+					for _, spec in ipairs(PlotConfig.BuyPads) do
+						local pad = handle.pads[spec.id]
+						if pad and not pad.purchased then
+							local affordable = essence >= spec.cost
+							pad.pad.Color = affordable and PlotConfig.COLORS.affordable or PlotConfig.COLORS.locked
+							pad.pad.Transparency = affordable and 0.1 or 0.35
+							pad.label.TextColor3 = affordable and Color3.fromRGB(255, 226, 150)
+								or Color3.fromRGB(196, 190, 220)
+						end
+					end
+				end
+			end
+		end
 	end)
 end
 
