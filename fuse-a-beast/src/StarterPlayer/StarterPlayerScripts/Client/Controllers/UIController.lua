@@ -1,14 +1,17 @@
 --!strict
 --[[
 	UIController
-	Builds and drives the entire in-game interface in code and keeps it in sync
-	with ClientState. The UI is intentionally "invisible onboarding": the player
-	lands directly on the Fusion panel and can fuse within seconds — no tutorial
-	gate (a top cause of Day-1 churn).
+	Builds and drives the interface: a compact HUD plus modal panels for Summon,
+	Chamber, Beastdex, Pets, Arena, Quests and Shop.
 
-	Sections: top resource bar, central Fusion panel, bottom nav, and toggled
-	panels for Beastdex, Quests, and Shop. Every button only *requests* an action;
-	the server validates and replies with a StateUpdate that this controller renders.
+	Two principles carried over from the design pass:
+	  1. The world is the way in. Summon and Chamber open by walking up to the
+	     building; the HUD stays small so you can actually see the game.
+	  2. Everything is chunky and tactile (Components), because a flat dark
+	     dashboard is what made the first build feel like a menu, not a game.
+
+	The client only ever *requests*; the server replies with a StateUpdate that
+	this controller renders.
 ]]
 
 local Players = game:GetService("Players")
@@ -19,202 +22,116 @@ local Remotes = require(Shared.Net.Remotes)
 local GameConfig = require(Shared.Config.GameConfig)
 local ElementConfig = require(Shared.Config.ElementConfig)
 local BeastConfig = require(Shared.Config.BeastConfig)
-local RecipeConfig = require(Shared.Config.RecipeConfig)
+local VariantConfig = require(Shared.Config.VariantConfig)
+local CombatConfig = require(Shared.Config.CombatConfig)
 local MonetizationConfig = require(Shared.Config.MonetizationConfig)
 local QuestConfig = require(Shared.Config.QuestConfig)
+local PlotConfig = require(Shared.Config.PlotConfig)
+local BeastInventory = require(Shared.Util.BeastInventory)
 local Format = require(Shared.Util.Format)
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Create = require(script.Parent.Parent.UI.Create)
+local Theme = require(script.Parent.Parent.UI.Theme)
+local UI = require(script.Parent.Parent.UI.Components)
 
 local UIController = {}
 
-local RARITY_COLORS = {
-	Common = Color3.fromRGB(180, 180, 180),
-	Uncommon = Color3.fromRGB(90, 200, 100),
-	Rare = Color3.fromRGB(70, 140, 240),
-	Epic = Color3.fromRGB(170, 90, 240),
-	Legendary = Color3.fromRGB(245, 180, 40),
-	Mythic = Color3.fromRGB(240, 70, 120),
-	Secret = Color3.fromRGB(30, 30, 30),
-}
-
-local BG = Color3.fromRGB(24, 26, 34)
-local PANEL = Color3.fromRGB(34, 37, 48)
-local ACCENT = Color3.fromRGB(120, 90, 240)
-local TEXT = Color3.fromRGB(235, 238, 245)
-
 local refs: { [string]: any } = {}
-local selected: { string } = {}
-local elementButtons: { [string]: TextButton } = {}
 local panels: { [string]: Frame } = {}
+local bodies: { [string]: ScrollingFrame } = {}
+local selectedElements: { string } = {}
+local chamberSlots: { any } = {} -- up to two { beastId, variant } picks
 
--- ── small styling helpers ────────────────────────────────────────────────────
-local function corner(radius: number, parent: Instance)
-	Create("UICorner", { CornerRadius = UDim.new(0, radius), Parent = parent })
+local function rarityColor(rarity: string): Color3
+	return Theme.rarity[rarity] or Theme.textMuted
 end
 
-local function pad(px: number, parent: Instance)
-	Create("UIPadding", {
-		PaddingLeft = UDim.new(0, px),
-		PaddingRight = UDim.new(0, px),
-		PaddingTop = UDim.new(0, px),
-		PaddingBottom = UDim.new(0, px),
-		Parent = parent,
-	})
+local function beastLabel(beastId: string, variant: string): string
+	local beast = BeastConfig.ById[beastId]
+	if not beast then
+		return "?"
+	end
+	return VariantConfig.label(variant, beast.name)
 end
 
-local function button(text: string, color: Color3): TextButton
-	local b = Create("TextButton", {
-		Text = text,
-		Font = Enum.Font.GothamBold,
-		TextSize = 16,
-		TextColor3 = TEXT,
-		BackgroundColor3 = color,
-		AutoButtonColor = true,
-		BorderSizePixel = 0,
-	}) :: TextButton
-	corner(8, b)
-	return b
-end
+-- ── HUD ───────────────────────────────────────────────────────────────────
 
--- ── build: static layout ─────────────────────────────────────────────────────
-function UIController.build()
-	local player = Players.LocalPlayer
-	local gui = Create("ScreenGui", {
-		Name = "FuseABeast",
-		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		IgnoreGuiInset = false,
-		Parent = player:WaitForChild("PlayerGui"),
-	})
-	refs.gui = gui
-
-	-- Top resource bar.
-	local topBar = Create("Frame", {
+local function buildHud(gui: Instance)
+	local bar = UI.surface({
 		Name = "TopBar",
-		Size = UDim2.new(1, -20, 0, 46),
-		Position = UDim2.new(0, 10, 0, 6),
-		BackgroundColor3 = PANEL,
+		Size = UDim2.fromOffset(360, 52),
+		Position = UDim2.new(0.5, -180, 0, 8),
+		BackgroundColor3 = Theme.panel,
 		BorderSizePixel = 0,
 		Parent = gui,
 	})
-	corner(10, topBar)
 	Create("UIListLayout", {
 		FillDirection = Enum.FillDirection.Horizontal,
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		VerticalAlignment = Enum.VerticalAlignment.Center,
-		Padding = UDim.new(0, 18),
-		Parent = topBar,
+		Padding = UDim.new(0, 14),
+		Parent = bar,
 	})
-	local function stat(name: string)
-		local label = Create("TextLabel", {
-			Name = name,
-			Size = UDim2.new(0, 170, 1, 0),
-			BackgroundTransparency = 1,
-			Font = Enum.Font.GothamBold,
-			TextSize = 16,
-			TextColor3 = TEXT,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			Text = name .. ": 0",
-			Parent = topBar,
-		})
-		refs[name] = label
-	end
-	stat("Essence")
-	stat("Gems")
-	stat("Rate")
 
-	-- Central fusion panel. Hidden until the player walks up to their Altar and
-	-- activates it — the world is the way into the UI, not a permanent overlay.
-	local fusion = Create("Frame", {
-		Name = "FusionPanel",
-		Size = UDim2.new(0, 360, 0, 300),
-		Position = UDim2.new(0.5, -180, 0.5, -170),
-		BackgroundColor3 = PANEL,
+	local function stat(name: string, color: Color3, width: number)
+		local holder = Create("Frame", {
+			Size = UDim2.fromOffset(width, 40),
+			BackgroundTransparency = 1,
+			Parent = bar,
+		})
+		refs[name] = UI.label("0", {
+			Size = UDim2.new(1, 0, 0, 22),
+			Font = Theme.fontDisplay,
+			TextSize = 20,
+			TextColor3 = color,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Parent = holder,
+		})
+		UI.label(string.upper(name), {
+			Size = UDim2.new(1, 0, 0, 12),
+			Position = UDim2.fromOffset(0, 24),
+			Font = Theme.fontBold,
+			TextSize = 10,
+			TextColor3 = Theme.textMuted,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Parent = holder,
+		})
+	end
+	stat("Essence", Theme.goldLight, 128)
+	stat("Gems", Theme.cyan, 74)
+	stat("Rate", Theme.accentLight, 96)
+
+	-- Active pet card, bottom-left: your fighter, always visible.
+	local petCard = UI.surface({
+		Name = "PetCard",
+		Size = UDim2.fromOffset(184, 62),
+		Position = UDim2.new(0, 12, 1, -136),
+		BackgroundColor3 = Theme.panel,
 		BorderSizePixel = 0,
-		Visible = false,
 		Parent = gui,
 	})
-	refs.fusionPanel = fusion
-
-	local closeFusion = button("X", Color3.fromRGB(200, 60, 70))
-	closeFusion.Size = UDim2.new(0, 30, 0, 26)
-	closeFusion.Position = UDim2.new(1, -34, 0, 4)
-	closeFusion.ZIndex = 3
-	closeFusion.Parent = fusion
-	closeFusion.MouseButton1Click:Connect(function()
-		fusion.Visible = false
-	end)
-	corner(14, fusion)
-	pad(14, fusion)
-	Create("UIListLayout", {
-		FillDirection = Enum.FillDirection.Vertical,
-		HorizontalAlignment = Enum.HorizontalAlignment.Center,
-		Padding = UDim.new(0, 8),
-		Parent = fusion,
+	refs.petName = UI.label("No pet", {
+		Size = UDim2.new(1, -16, 0, 20),
+		Position = UDim2.fromOffset(12, 9),
+		Font = Theme.fontDisplay,
+		TextSize = 15,
+		Parent = petCard,
 	})
-	Create("TextLabel", {
-		Size = UDim2.new(1, 0, 0, 24),
-		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamBold,
-		TextSize = 18,
-		TextColor3 = TEXT,
-		Text = "Fusion Altar — pick 2-3 elements",
-		LayoutOrder = 1,
-		Parent = fusion,
+	refs.petPower = UI.label("Summon a beast!", {
+		Size = UDim2.new(1, -16, 0, 16),
+		Position = UDim2.fromOffset(12, 31),
+		TextSize = 12,
+		TextColor3 = Theme.textMuted,
+		Parent = petCard,
 	})
+end
 
-	-- element grid
-	local grid = Create("Frame", {
-		Size = UDim2.new(1, 0, 0, 120),
-		BackgroundTransparency = 1,
-		LayoutOrder = 2,
-		Parent = fusion,
-	})
-	Create("UIGridLayout", {
-		CellSize = UDim2.new(0, 106, 0, 54),
-		CellPadding = UDim2.new(0, 6, 0, 6),
-		HorizontalAlignment = Enum.HorizontalAlignment.Center,
-		Parent = grid,
-	})
-	for _, element in ipairs(ElementConfig.List) do
-		local color = Color3.new(element.color[1], element.color[2], element.color[3])
-		local b = button(element.displayName .. "\n0", color)
-		b.TextSize = 14
-		b.Name = element.id
-		b.Parent = grid
-		elementButtons[element.id] = b
-		b.MouseButton1Click:Connect(function()
-			UIController._toggleElement(element.id)
-		end)
-	end
-
-	-- selection preview + hint
-	refs.selectionLabel = Create("TextLabel", {
-		Size = UDim2.new(1, 0, 0, 20),
-		BackgroundTransparency = 1,
-		Font = Enum.Font.Gotham,
-		TextSize = 13,
-		TextColor3 = Color3.fromRGB(190, 195, 210),
-		Text = "Select elements to begin",
-		LayoutOrder = 3,
-		Parent = fusion,
-	})
-
-	local fuseBtn = button("FUSE", ACCENT)
-	fuseBtn.Size = UDim2.new(1, 0, 0, 44)
-	fuseBtn.TextSize = 20
-	fuseBtn.LayoutOrder = 4
-	fuseBtn.Parent = fusion
-	fuseBtn.MouseButton1Click:Connect(UIController._fuse)
-	refs.fuseBtn = fuseBtn
-
-	-- Bottom nav.
+local function buildNav(gui: Instance)
 	local nav = Create("Frame", {
 		Name = "Nav",
-		Size = UDim2.new(1, -20, 0, 50),
-		Position = UDim2.new(0, 10, 1, -58),
+		Size = UDim2.new(1, -24, 0, 56),
+		Position = UDim2.new(0, 12, 1, -66),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
@@ -225,316 +142,591 @@ function UIController.build()
 		Padding = UDim.new(0, 8),
 		Parent = nav,
 	})
-	local navSpecs = {
-		{ text = "Fuse", action = function() UIController.openFusion() end },
-		{ text = "Altar", action = function() Remotes.event("UpgradeAltar"):FireServer() end },
-		{ text = "Beastdex", action = function() UIController.openPanel("Beastdex") end },
-		{ text = "Quests", action = function() UIController.openPanel("Quests") end },
-		{ text = "Shop", action = function() UIController.openPanel("Shop") end },
-		{ text = "Ascend", action = function() Remotes.event("Ascend"):FireServer() end },
+
+	local specs = {
+		{ text = "Summon", color = Theme.accent, action = function() UIController.open("Summon") end },
+		{ text = "Chamber", color = Theme.rarity.Mythic, action = function() UIController.open("Chamber") end },
+		{ text = "Beasts", color = Theme.panelLight, action = function() UIController.open("Beastdex") end },
+		{ text = "Pets", color = Theme.panelLight, action = function() UIController.open("Pets") end },
+		{ text = "Arena", color = Theme.red, action = function() UIController.open("Arena") end },
+		{ text = "Quests", color = Theme.panelLight, action = function() UIController.open("Quests") end },
+		{ text = "Shop", color = Theme.green, action = function() UIController.open("Shop") end },
 	}
-	for _, spec in ipairs(navSpecs) do
-		local b = button(spec.text, Color3.fromRGB(48, 52, 66))
-		b.Size = UDim2.new(0, 100, 1, 0)
-		b.Parent = nav
-		b.MouseButton1Click:Connect(spec.action)
-		if spec.text == "Altar" then
-			refs.altarBtn = b
-		elseif spec.text == "Ascend" then
-			refs.ascendBtn = b
-		end
-	end
-
-	-- Toggled panels.
-	panels.Beastdex = UIController._makeScrollPanel("Beastdex")
-	panels.Quests = UIController._makeScrollPanel("Quests")
-	panels.Shop = UIController._makeScrollPanel("Shop")
-end
-
-function UIController._makeScrollPanel(title: string): Frame
-	local frame = Create("Frame", {
-		Name = title .. "Panel",
-		Size = UDim2.new(0, 420, 0, 420),
-		Position = UDim2.new(0.5, -210, 0.5, -210),
-		BackgroundColor3 = BG,
-		BorderSizePixel = 0,
-		Visible = false,
-		Parent = refs.gui,
-	}) :: Frame
-	corner(14, frame)
-	local header = Create("TextLabel", {
-		Size = UDim2.new(1, 0, 0, 40),
-		BackgroundColor3 = PANEL,
-		BorderSizePixel = 0,
-		Font = Enum.Font.GothamBold,
-		TextSize = 18,
-		TextColor3 = TEXT,
-		Text = title,
-		Parent = frame,
-	})
-	corner(14, header)
-	local close = button("X", Color3.fromRGB(200, 60, 70))
-	close.Size = UDim2.new(0, 32, 0, 28)
-	close.Position = UDim2.new(1, -38, 0, 6)
-	close.Parent = frame
-	close.MouseButton1Click:Connect(function()
-		frame.Visible = false
-	end)
-	local scroll = Create("ScrollingFrame", {
-		Name = "List",
-		Size = UDim2.new(1, -16, 1, -50),
-		Position = UDim2.new(0, 8, 0, 46),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		ScrollBarThickness = 6,
-		CanvasSize = UDim2.new(0, 0, 0, 0),
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		Parent = frame,
-	})
-	Create("UIListLayout", {
-		Padding = UDim.new(0, 6),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = scroll,
-	})
-	refs[title .. "List"] = scroll
-	return frame
-end
-
--- Opened by the Altar's ProximityPrompt (server fires "OpenFusion"), or from the
--- Fuse nav button as a fallback for players not standing at their Altar.
-function UIController.openFusion()
-	if refs.fusionPanel then
-		refs.fusionPanel.Visible = true
-		UIController._refreshSelection()
+	for _, spec in ipairs(specs) do
+		local btn = UI.button(spec.text, spec.color, {
+			Size = UDim2.fromOffset(104, 46),
+			TextSize = 15,
+			Parent = nav,
+		})
+		btn.MouseButton1Click:Connect(spec.action)
 	end
 end
 
-function UIController.openPanel(name: string)
+-- ── Panels ────────────────────────────────────────────────────────────────
+
+function UIController.open(name: string)
 	for panelName, frame in pairs(panels) do
 		frame.Visible = panelName == name
 	end
-	if name == "Beastdex" then
-		UIController._renderBeastdex()
-	elseif name == "Quests" then
-		UIController._renderQuests()
-	elseif name == "Shop" then
-		UIController._renderShop()
+	local frame = panels[name]
+	if frame then
+		UI.tweenIn(frame)
+	end
+	local renderer = UIController["_render" .. name]
+	if renderer then
+		renderer(UIController)
 	end
 end
 
--- ── fusion selection ─────────────────────────────────────────────────────────
-function UIController._toggleElement(id: string)
-	local index = table.find(selected, id)
-	if index then
-		table.remove(selected, index)
-	elseif #selected < 3 then
-		table.insert(selected, id)
-	end
-	UIController._refreshSelection()
+function UIController.openFusion()
+	UIController.open("Summon")
 end
 
-function UIController._refreshSelection()
-	for id, b in pairs(elementButtons) do
-		local isSelected = table.find(selected, id) ~= nil
-		b.BackgroundTransparency = isSelected and 0 or 0.35
-		local stroke = b:FindFirstChildOfClass("UIStroke")
-		if isSelected and not stroke then
-			Create("UIStroke", { Thickness = 3, Color = Color3.fromRGB(255, 255, 255), Parent = b })
-		elseif not isSelected and stroke then
-			stroke:Destroy()
+function UIController.openChamber()
+	UIController.open("Chamber")
+end
+
+-- ── Summon ────────────────────────────────────────────────────────────────
+
+function UIController:_renderSummon()
+	local body = bodies.Summon
+	UI.clear(body)
+	local data = ClientState.data
+
+	UI.label("Pick 1-3 elements. Rarer beasts hide behind rarer combinations.", {
+		Size = UDim2.new(1, -8, 0, 34),
+		TextSize = 13,
+		TextColor3 = Theme.textMuted,
+		TextWrapped = true,
+		LayoutOrder = 1,
+		Parent = body,
+	})
+
+	local grid = Create("Frame", {
+		Size = UDim2.new(1, -8, 0, 168),
+		BackgroundTransparency = 1,
+		LayoutOrder = 2,
+		Parent = body,
+	})
+	Create("UIGridLayout", {
+		CellSize = UDim2.fromOffset(126, 78),
+		CellPadding = UDim2.fromOffset(8, 8),
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		Parent = grid,
+	})
+
+	for _, element in ipairs(ElementConfig.List) do
+		local color = Theme.element[element.id] or Theme.textMuted
+		local held = (data.shards or {})[element.id] or 0
+		local isSelected = table.find(selectedElements, element.id) ~= nil
+
+		local btn = UI.button(
+			string.format("%s\n%s", element.displayName, Format.abbreviate(held)),
+			color,
+			{ TextSize = 14, Parent = grid }
+		)
+		if isSelected then
+			UI.stroke(btn, 4, Color3.fromRGB(255, 255, 255))
 		end
+		btn.MouseButton1Click:Connect(function()
+			local index = table.find(selectedElements, element.id)
+			if index then
+				table.remove(selectedElements, index)
+			elseif #selectedElements < 3 then
+				table.insert(selectedElements, element.id)
+			end
+			self:_renderSummon()
+		end)
 	end
-	if #selected == 0 then
-		refs.selectionLabel.Text = "Select elements to begin"
-	else
-		local hint = RecipeConfig.getHint(selected)
-		refs.selectionLabel.Text = table.concat(selected, " + ") .. (hint and ("  —  " .. hint) or "")
-	end
-	refs.fuseBtn.BackgroundColor3 = (#selected >= 2) and ACCENT or Color3.fromRGB(70, 70, 80)
+
+	local cost = #selectedElements * GameConfig.FUSION_SHARD_COST
+	UI.label(
+		#selectedElements == 0 and "Nothing selected"
+			or string.format("%s  ·  %d shards each", table.concat(selectedElements, " + "), GameConfig.FUSION_SHARD_COST),
+		{
+			Size = UDim2.new(1, -8, 0, 22),
+			TextSize = 13,
+			TextColor3 = Theme.goldLight,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			LayoutOrder = 3,
+			Parent = body,
+		}
+	)
+
+	local summon = UI.button("SUMMON", #selectedElements > 0 and Theme.accent or Theme.panelLight, {
+		Size = UDim2.new(1, -8, 0, 54),
+		TextSize = 22,
+		LayoutOrder = 4,
+		Parent = body,
+	})
+	summon.MouseButton1Click:Connect(function()
+		if #selectedElements > 0 then
+			Remotes.event("Fuse"):FireServer({ elements = table.clone(selectedElements) })
+		end
+	end)
 end
 
-function UIController._fuse()
-	if #selected < 2 then
+-- ── Fusion Chamber ────────────────────────────────────────────────────────
+
+function UIController:_renderChamber()
+	local body = bodies.Chamber
+	UI.clear(body)
+	local data = ClientState.data
+	local owned = BeastInventory.list(data.codex or {})
+	local hasChamber = ((data.plot or {}).purchasedPads or {})["fusion_chamber"] == true
+
+	if not hasChamber then
+		UI.label("Build the Fusion Chamber on your plot to combine beasts.\nIt's the second buy-pad on your sanctuary.", {
+			Size = UDim2.new(1, -8, 0, 60),
+			TextSize = 14,
+			TextColor3 = Theme.goldLight,
+			TextWrapped = true,
+			LayoutOrder = 1,
+			Parent = body,
+		})
 		return
 	end
-	Remotes.event("Fuse"):FireServer({ elements = table.clone(selected) })
-end
 
--- Essence is driven by EssenceController (smooth predicted counter), so refresh()
--- deliberately does NOT overwrite it.
-function UIController.setEssence(text: string)
-	if refs.Essence then
-		refs.Essence.Text = "Essence: " .. text
-	end
-end
+	-- The two input slots.
+	local slotRow = Create("Frame", {
+		Size = UDim2.new(1, -8, 0, 86),
+		BackgroundTransparency = 1,
+		LayoutOrder = 1,
+		Parent = body,
+	})
+	Create("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
+		Padding = UDim.new(0, 12),
+		Parent = slotRow,
+	})
 
--- ── rendering from state ─────────────────────────────────────────────────────
-function UIController.refresh(keys: { string })
-	local data = ClientState.data
-	if data.currencies then
-		refs.Gems.Text = "Gems: " .. Format.abbreviate(data.currencies.gems or 0)
-	end
-	if data.shards then
-		for id, b in pairs(elementButtons) do
-			b.Text = ElementConfig.ById[id].displayName .. "\n" .. Format.abbreviate(data.shards[id] or 0)
+	for i = 1, 2 do
+		local pick = chamberSlots[i]
+		local slot = UI.surface({
+			Size = UDim2.fromOffset(150, 78),
+			BackgroundColor3 = pick and Theme.panelLight or Theme.panel,
+			BorderSizePixel = 0,
+			Parent = slotRow,
+		}, false)
+		UI.label(pick and beastLabel(pick.beastId, pick.variant) or ("Slot " .. i), {
+			Size = UDim2.new(1, -12, 0, 34),
+			Position = UDim2.fromOffset(8, 10),
+			Font = Theme.fontDisplay,
+			TextSize = 13,
+			TextWrapped = true,
+			TextColor3 = pick and Theme.variant[pick.variant] or Theme.textMuted,
+			Parent = slot,
+		})
+		if pick then
+			local clear = UI.button("Remove", Theme.red, {
+				Size = UDim2.new(1, -16, 0, 24),
+				Position = UDim2.fromOffset(8, 46),
+				TextSize = 12,
+				Parent = slot,
+			})
+			clear.MouseButton1Click:Connect(function()
+				table.remove(chamberSlots, i)
+				self:_renderChamber()
+			end)
 		end
 	end
-	if data.ratePerSecond then
-		refs.Rate.Text = "Rate: " .. Format.abbreviate(data.ratePerSecond) .. "/s"
-	end
-	if data.altar and refs.altarBtn then
-		local cost = math.floor(GameConfig.ALTAR_UPGRADE_BASE_COST * GameConfig.ALTAR_UPGRADE_COST_GROWTH ^ (data.altar.level - 1))
-		refs.altarBtn.Text = string.format("Altar Lv.%d\n%s", data.altar.level, Format.abbreviate(cost))
-	end
-	if data.ascension and data.altar and refs.ascendBtn then
-		local req = math.floor(GameConfig.ASCENSION_ALTAR_REQUIREMENT * GameConfig.ASCENSION_COST_GROWTH ^ data.ascension.count)
-		refs.ascendBtn.Text = string.format("Ascend\nLv%d req", req)
-	end
-	-- refresh open dynamic panels
-	if panels.Beastdex.Visible then
-		UIController._renderBeastdex()
-	end
-	if panels.Quests.Visible then
-		UIController._renderQuests()
-	end
-end
 
-function UIController._clearList(scroll: ScrollingFrame)
-	for _, child in ipairs(scroll:GetChildren()) do
-		if child:IsA("GuiObject") then
-			child:Destroy()
+	-- Outcome preview: this is the teaching moment for the whole system.
+	local a, b = chamberSlots[1], chamberSlots[2]
+	local previewText, previewColor
+	if not a or not b then
+		previewText = "Choose two beasts below."
+		previewColor = Theme.textMuted
+	elseif a.beastId == b.beastId and a.variant == b.variant then
+		local nextVariant = VariantConfig.next(a.variant)
+		if nextVariant then
+			previewText = string.format(
+				"Variant fusion → %.0f%% chance of a %s %s",
+				VariantConfig.get(a.variant).upgradeChance * 100,
+				nextVariant,
+				BeastConfig.ById[a.beastId].name
+			)
+			previewColor = Theme.variant[nextVariant]
+		else
+			previewText = "Void is the highest variant."
+			previewColor = Theme.red
 		end
+	else
+		previewText = "Hybrid fusion → a new beast from their combined elements"
+		previewColor = Theme.rarity.Mythic
+	end
+
+	UI.label(previewText, {
+		Size = UDim2.new(1, -8, 0, 34),
+		TextSize = 13,
+		TextColor3 = previewColor,
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		LayoutOrder = 2,
+		Parent = body,
+	})
+
+	local fuse = UI.button("FUSE", (a and b) and Theme.rarity.Mythic or Theme.panelLight, {
+		Size = UDim2.new(1, -8, 0, 50),
+		TextSize = 20,
+		LayoutOrder = 3,
+		Parent = body,
+	})
+	fuse.MouseButton1Click:Connect(function()
+		if a and b then
+			Remotes.event("ChamberFuse"):FireServer({ a = a, b = b })
+			chamberSlots = {}
+		end
+	end)
+
+	UI.label("YOUR BEASTS", {
+		Size = UDim2.new(1, -8, 0, 22),
+		Font = Theme.fontBold,
+		TextSize = 12,
+		TextColor3 = Theme.accentLight,
+		LayoutOrder = 4,
+		Parent = body,
+	})
+
+	for index, item in ipairs(owned) do
+		local row = UI.surface({
+			Size = UDim2.new(1, -8, 0, 46),
+			BackgroundColor3 = Theme.panel,
+			BorderSizePixel = 0,
+			LayoutOrder = 4 + index,
+			Parent = body,
+		}, false)
+		local beast = BeastConfig.ById[item.beastId]
+		UI.label(string.format("%s  ×%d", beastLabel(item.beastId, item.variant), item.count), {
+			Size = UDim2.new(0.62, 0, 1, 0),
+			Position = UDim2.fromOffset(12, 0),
+			Font = Theme.fontBold,
+			TextSize = 13,
+			TextColor3 = Theme.variant[item.variant] or Theme.text,
+			Parent = row,
+		})
+		UI.pill(beast.rarity, rarityColor(beast.rarity), {
+			Position = UDim2.new(1, -190, 0.5, -11),
+			Size = UDim2.fromOffset(84, 22),
+			Parent = row,
+		})
+		local add = UI.button("Add", Theme.accent, {
+			Size = UDim2.fromOffset(84, 30),
+			Position = UDim2.new(1, -94, 0.5, -15),
+			TextSize = 13,
+			Parent = row,
+		})
+		add.MouseButton1Click:Connect(function()
+			if #chamberSlots >= 2 then
+				return
+			end
+			-- Adding the same entry twice is exactly how a variant fusion is made,
+			-- so it's allowed as long as the player owns two copies.
+			local already = 0
+			for _, pick in ipairs(chamberSlots) do
+				if pick.beastId == item.beastId and pick.variant == item.variant then
+					already += 1
+				end
+			end
+			if already < item.count then
+				table.insert(chamberSlots, { beastId = item.beastId, variant = item.variant })
+				self:_renderChamber()
+			end
+		end)
 	end
 end
 
-function UIController._renderBeastdex()
-	local scroll = refs.BeastdexList
-	UIController._clearList(scroll)
+-- ── Beastdex ──────────────────────────────────────────────────────────────
+
+function UIController:_renderBeastdex()
+	local body = bodies.Beastdex
+	UI.clear(body)
 	local data = ClientState.data
 	local codex = data.codex or {}
-	local display = data.display or {}
-	local order = 0
-	for _, beast in ipairs(BeastConfig.List) do
-		order += 1
+	local discovered = BeastInventory.speciesCount(codex)
+
+	UI.label(string.format("Discovered  %d / %d", discovered, BeastConfig.count()), {
+		Size = UDim2.new(1, -8, 0, 26),
+		Font = Theme.fontDisplay,
+		TextSize = 17,
+		TextColor3 = Theme.goldLight,
+		LayoutOrder = 1,
+		Parent = body,
+	})
+
+	for index, beast in ipairs(BeastConfig.List) do
 		local entry = codex[beast.id]
-		local discovered = entry ~= nil
-		local row = Create("Frame", {
-			Size = UDim2.new(1, -6, 0, 46),
-			BackgroundColor3 = PANEL,
+		local row = UI.surface({
+			Size = UDim2.new(1, -8, 0, 48),
+			BackgroundColor3 = entry and Theme.panel or Color3.fromRGB(21, 17, 42),
 			BorderSizePixel = 0,
-			LayoutOrder = order,
-			Parent = scroll,
-		})
-		corner(8, row)
-		Create("Frame", { -- rarity color bar
-			Size = UDim2.new(0, 6, 1, 0),
-			BackgroundColor3 = RARITY_COLORS[beast.rarity] or TEXT,
+			LayoutOrder = 1 + index,
+			Parent = body,
+		}, false)
+
+		Create("Frame", {
+			Size = UDim2.fromOffset(6, 48),
+			BackgroundColor3 = rarityColor(beast.rarity),
 			BorderSizePixel = 0,
 			Parent = row,
 		})
-		-- Optional portrait: shown only if the beast has an `icon` asset id AND is
-		-- discovered. Otherwise the row stays on the code-built color placeholder.
-		local textLeft = 14
-		if discovered and beast.icon then
-			Create("ImageLabel", {
-				Size = UDim2.new(0, 38, 0, 38),
-				Position = UDim2.new(0, 12, 0.5, -19),
-				BackgroundTransparency = 1,
-				Image = beast.icon,
+
+		if entry then
+			-- Show every variant held, e.g. "3 Normal · 1 Golden".
+			local parts = {}
+			for _, variantId in ipairs(VariantConfig.Order) do
+				local count = entry.variants[variantId]
+				if count and count > 0 then
+					table.insert(parts, string.format("%d %s", count, variantId))
+				end
+			end
+			UI.label(beast.name, {
+				Size = UDim2.new(0.6, 0, 0, 20),
+				Position = UDim2.fromOffset(16, 5),
+				Font = Theme.fontBold,
+				TextSize = 14,
 				Parent = row,
 			})
-			textLeft = 58
+			UI.label(table.concat(parts, " · "), {
+				Size = UDim2.new(0.7, 0, 0, 16),
+				Position = UDim2.fromOffset(16, 25),
+				TextSize = 11,
+				TextColor3 = Theme.textMuted,
+				Parent = row,
+			})
+		else
+			UI.label("???", {
+				Size = UDim2.new(0.6, 0, 1, 0),
+				Position = UDim2.fromOffset(16, 0),
+				Font = Theme.fontBold,
+				TextSize = 14,
+				TextColor3 = Color3.fromRGB(96, 88, 128),
+				Parent = row,
+			})
 		end
-		Create("TextLabel", {
-			Size = UDim2.new(0.55, 0, 1, 0),
-			Position = UDim2.new(0, textLeft, 0, 0),
-			BackgroundTransparency = 1,
-			Font = Enum.Font.GothamBold,
-			TextSize = 14,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextColor3 = discovered and TEXT or Color3.fromRGB(110, 110, 120),
-			Text = discovered
-				and string.format("%s  (%s)\nx%d  Lv.%d", beast.name, beast.rarity, entry.count, entry.level)
-				or string.format("???  (%s)", beast.rarity),
+
+		UI.pill(beast.rarity, rarityColor(beast.rarity), {
+			Position = UDim2.new(1, -96, 0.5, -11),
+			Size = UDim2.fromOffset(88, 22),
 			Parent = row,
 		})
-		if discovered then
-			local isDisplayed = table.find(display, beast.id) ~= nil
-			local displayBtn = button(isDisplayed and "Displayed" or "Display", isDisplayed and Color3.fromRGB(90, 160, 90) or Color3.fromRGB(60, 64, 80))
-			displayBtn.Size = UDim2.new(0, 84, 0, 32)
-			displayBtn.Position = UDim2.new(1, -178, 0.5, -16)
-			displayBtn.TextSize = 13
-			displayBtn.Parent = row
-			displayBtn.MouseButton1Click:Connect(function()
-				UIController._toggleDisplay(beast.id)
-			end)
+	end
+end
 
-			local mergeBtn = button("Merge", Color3.fromRGB(150, 110, 60))
-			mergeBtn.Size = UDim2.new(0, 78, 0, 32)
-			mergeBtn.Position = UDim2.new(1, -86, 0.5, -16)
-			mergeBtn.TextSize = 13
-			mergeBtn.Parent = row
-			mergeBtn.MouseButton1Click:Connect(function()
-				Remotes.event("Merge"):FireServer({ beastId = beast.id })
+-- ── Pets ──────────────────────────────────────────────────────────────────
+
+function UIController:_renderPets()
+	local body = bodies.Pets
+	UI.clear(body)
+	local data = ClientState.data
+	local owned = BeastInventory.list(data.codex or {})
+	local active = data.activePet or { beastId = "", variant = "Normal" }
+
+	UI.label("Your pet follows you and fights in the Arena. Power comes from rarity and variant.", {
+		Size = UDim2.new(1, -8, 0, 34),
+		TextSize = 13,
+		TextColor3 = Theme.textMuted,
+		TextWrapped = true,
+		LayoutOrder = 1,
+		Parent = body,
+	})
+
+	if #owned == 0 then
+		UI.label("You don't own any beasts yet — summon one at your Altar!", {
+			Size = UDim2.new(1, -8, 0, 40),
+			TextSize = 14,
+			TextColor3 = Theme.goldLight,
+			TextWrapped = true,
+			LayoutOrder = 2,
+			Parent = body,
+		})
+		return
+	end
+
+	for index, item in ipairs(owned) do
+		local isActive = active.beastId == item.beastId and active.variant == item.variant
+		local stats = BeastInventory.stats(item.beastId, item.variant)
+		local row = UI.surface({
+			Size = UDim2.new(1, -8, 0, 52),
+			BackgroundColor3 = isActive and Theme.accent or Theme.panel,
+			BorderSizePixel = 0,
+			LayoutOrder = 1 + index,
+			Parent = body,
+		}, false)
+
+		UI.label(beastLabel(item.beastId, item.variant), {
+			Size = UDim2.new(0.55, 0, 0, 20),
+			Position = UDim2.fromOffset(12, 7),
+			Font = Theme.fontBold,
+			TextSize = 14,
+			TextColor3 = Theme.variant[item.variant] or Theme.text,
+			Parent = row,
+		})
+		UI.label(string.format("%s power  ·  %s HP", Format.abbreviate(stats.power), Format.abbreviate(stats.health)), {
+			Size = UDim2.new(0.6, 0, 0, 16),
+			Position = UDim2.fromOffset(12, 28),
+			TextSize = 11,
+			TextColor3 = Theme.textMuted,
+			Parent = row,
+		})
+
+		local pick = UI.button(isActive and "Active" or "Equip", isActive and Theme.green or Theme.panelLight, {
+			Size = UDim2.fromOffset(92, 32),
+			Position = UDim2.new(1, -102, 0.5, -16),
+			TextSize = 13,
+			Parent = row,
+		})
+		if not isActive then
+			pick.MouseButton1Click:Connect(function()
+				Remotes.event("SetPet"):FireServer({ beastId = item.beastId, variant = item.variant })
 			end)
 		end
 	end
 end
 
-function UIController._toggleDisplay(beastId: string)
-	local display = table.clone(ClientState.data.display or {})
-	local index = table.find(display, beastId)
-	if index then
-		table.remove(display, index)
-	else
-		table.insert(display, beastId)
+-- ── Arena ─────────────────────────────────────────────────────────────────
+
+function UIController:_renderArena()
+	local body = bodies.Arena
+	UI.clear(body)
+	local data = ClientState.data
+	local battle = data.battle or { wins = 0, losses = 0, bossesCleared = {} }
+
+	UI.label(string.format("Record  %d W / %d L", battle.wins, battle.losses), {
+		Size = UDim2.new(1, -8, 0, 26),
+		Font = Theme.fontDisplay,
+		TextSize = 17,
+		TextColor3 = Theme.goldLight,
+		LayoutOrder = 1,
+		Parent = body,
+	})
+
+	UI.label("BOSSES", {
+		Size = UDim2.new(1, -8, 0, 20),
+		Font = Theme.fontBold,
+		TextSize = 12,
+		TextColor3 = Theme.accentLight,
+		LayoutOrder = 2,
+		Parent = body,
+	})
+
+	for index, boss in ipairs(CombatConfig.Bosses) do
+		local cleared = (battle.bossesCleared or {})[boss.id] == true
+		local row = UI.surface({
+			Size = UDim2.new(1, -8, 0, 54),
+			BackgroundColor3 = Theme.panel,
+			BorderSizePixel = 0,
+			LayoutOrder = 2 + index,
+			Parent = body,
+		}, false)
+
+		UI.label(boss.name, {
+			Size = UDim2.new(0.5, 0, 0, 20),
+			Position = UDim2.fromOffset(12, 8),
+			Font = Theme.fontBold,
+			TextSize = 14,
+			TextColor3 = cleared and Theme.green or Theme.text,
+			Parent = row,
+		})
+		UI.label(string.format("%s power · %s HP", Format.abbreviate(boss.power), Format.abbreviate(boss.health)), {
+			Size = UDim2.new(0.6, 0, 0, 16),
+			Position = UDim2.fromOffset(12, 29),
+			TextSize = 11,
+			TextColor3 = Theme.textMuted,
+			Parent = row,
+		})
+
+		local fight = UI.button(cleared and "Rematch" or "Fight", Theme.red, {
+			Size = UDim2.fromOffset(96, 34),
+			Position = UDim2.new(1, -106, 0.5, -17),
+			TextSize = 14,
+			Parent = row,
+		})
+		fight.MouseButton1Click:Connect(function()
+			Remotes.event("FightBoss"):FireServer({ bossId = boss.id })
+			panels.Arena.Visible = false
+		end)
 	end
-	Remotes.event("SetDisplay"):FireServer({ beasts = display })
+
+	UI.label("DUEL A PLAYER", {
+		Size = UDim2.new(1, -8, 0, 20),
+		Font = Theme.fontBold,
+		TextSize = 12,
+		TextColor3 = Theme.accentLight,
+		LayoutOrder = 40,
+		Parent = body,
+	})
+
+	local order = 41
+	for _, other in ipairs(Players:GetPlayers()) do
+		if other ~= Players.LocalPlayer then
+			local row = UI.surface({
+				Size = UDim2.new(1, -8, 0, 46),
+				BackgroundColor3 = Theme.panel,
+				BorderSizePixel = 0,
+				LayoutOrder = order,
+				Parent = body,
+			}, false)
+			order += 1
+			UI.label(other.DisplayName, {
+				Size = UDim2.new(0.6, 0, 1, 0),
+				Position = UDim2.fromOffset(12, 0),
+				Font = Theme.fontBold,
+				TextSize = 14,
+				Parent = row,
+			})
+			local challenge = UI.button("Challenge", Theme.accent, {
+				Size = UDim2.fromOffset(110, 32),
+				Position = UDim2.new(1, -120, 0.5, -16),
+				TextSize = 13,
+				Parent = row,
+			})
+			challenge.MouseButton1Click:Connect(function()
+				Remotes.event("ChallengePlayer"):FireServer({ targetUserId = other.UserId })
+			end)
+		end
+	end
 end
 
-function UIController._renderQuests()
-	local scroll = refs.QuestsList
-	UIController._clearList(scroll)
-	local data = ClientState.data
-	local order = 0
+-- ── Quests ────────────────────────────────────────────────────────────────
 
-	-- Daily login claim.
-	order += 1
+function UIController:_renderQuests()
+	local body = bodies.Quests
+	UI.clear(body)
+	local data = ClientState.data
 	local login = data.login or { streak = 0, lastClaimDate = "" }
-	local todayStr = os.date("!%Y-%m-%d")
-	local claimable = login.lastClaimDate ~= todayStr
-	local loginRow = Create("Frame", {
-		Size = UDim2.new(1, -6, 0, 50),
-		BackgroundColor3 = PANEL,
+	local claimable = login.lastClaimDate ~= os.date("!%Y-%m-%d")
+
+	local loginRow = UI.surface({
+		Size = UDim2.new(1, -8, 0, 52),
+		BackgroundColor3 = Theme.panel,
 		BorderSizePixel = 0,
-		LayoutOrder = order,
-		Parent = scroll,
-	})
-	corner(8, loginRow)
-	Create("TextLabel", {
+		LayoutOrder = 1,
+		Parent = body,
+	}, false)
+	UI.label(string.format("Daily Login  ·  streak %d", login.streak or 0), {
 		Size = UDim2.new(0.6, 0, 1, 0),
-		Position = UDim2.new(0, 12, 0, 0),
-		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamBold,
+		Position = UDim2.fromOffset(12, 0),
+		Font = Theme.fontBold,
 		TextSize = 14,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = TEXT,
-		Text = string.format("Daily Login  (streak %d)", login.streak or 0),
 		Parent = loginRow,
 	})
-	local loginBtn = button(claimable and "Claim" or "Claimed", claimable and Color3.fromRGB(90, 160, 90) or Color3.fromRGB(60, 64, 80))
-	loginBtn.Size = UDim2.new(0, 100, 0, 34)
-	loginBtn.Position = UDim2.new(1, -110, 0.5, -17)
-	loginBtn.Parent = loginRow
+	local claim = UI.button(claimable and "Claim" or "Claimed", claimable and Theme.green or Theme.panelLight, {
+		Size = UDim2.fromOffset(106, 34),
+		Position = UDim2.new(1, -116, 0.5, -17),
+		TextSize = 14,
+		Parent = loginRow,
+	})
 	if claimable then
-		loginBtn.MouseButton1Click:Connect(function()
+		claim.MouseButton1Click:Connect(function()
 			Remotes.event("ClaimDaily"):FireServer()
 		end)
 	end
 
-	-- Daily quests.
 	local quests = data.quests or { active = {}, progress = {}, claimed = {} }
-	for _, questId in ipairs(quests.active or {}) do
+	for index, questId in ipairs(quests.active or {}) do
 		local def
 		for _, q in ipairs(QuestConfig.DailyPool) do
 			if q.id == questId then
@@ -543,35 +735,43 @@ function UIController._renderQuests()
 			end
 		end
 		if def then
-			order += 1
 			local progress = (quests.progress or {})[questId] or 0
 			local complete = progress >= def.target
 			local claimed = (quests.claimed or {})[questId] == true
-			local row = Create("Frame", {
-				Size = UDim2.new(1, -6, 0, 50),
-				BackgroundColor3 = PANEL,
+
+			local row = UI.surface({
+				Size = UDim2.new(1, -8, 0, 52),
+				BackgroundColor3 = Theme.panel,
 				BorderSizePixel = 0,
-				LayoutOrder = order,
-				Parent = scroll,
-			})
-			corner(8, row)
-			Create("TextLabel", {
-				Size = UDim2.new(0.62, 0, 1, 0),
-				Position = UDim2.new(0, 12, 0, 0),
-				BackgroundTransparency = 1,
-				Font = Enum.Font.Gotham,
+				LayoutOrder = 1 + index,
+				Parent = body,
+			}, false)
+			UI.label(def.desc, {
+				Size = UDim2.new(0.62, 0, 0, 20),
+				Position = UDim2.fromOffset(12, 7),
+				Font = Theme.fontBold,
 				TextSize = 13,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				TextColor3 = TEXT,
-				Text = string.format("%s\n%d / %d", def.desc, math.min(progress, def.target), def.target),
 				Parent = row,
 			})
-			local questBtn = button(claimed and "Done" or (complete and "Claim" or "..."), (complete and not claimed) and Color3.fromRGB(90, 160, 90) or Color3.fromRGB(60, 64, 80))
-			questBtn.Size = UDim2.new(0, 100, 0, 34)
-			questBtn.Position = UDim2.new(1, -110, 0.5, -17)
-			questBtn.Parent = row
+			UI.label(string.format("%d / %d", math.min(progress, def.target), def.target), {
+				Size = UDim2.new(0.5, 0, 0, 16),
+				Position = UDim2.fromOffset(12, 28),
+				TextSize = 11,
+				TextColor3 = complete and Theme.green or Theme.textMuted,
+				Parent = row,
+			})
+			local btn = UI.button(
+				claimed and "Done" or (complete and "Claim" or "…"),
+				(complete and not claimed) and Theme.green or Theme.panelLight,
+				{
+					Size = UDim2.fromOffset(106, 34),
+					Position = UDim2.new(1, -116, 0.5, -17),
+					TextSize = 14,
+					Parent = row,
+				}
+			)
 			if complete and not claimed then
-				questBtn.MouseButton1Click:Connect(function()
+				btn.MouseButton1Click:Connect(function()
 					Remotes.event("ClaimQuest"):FireServer({ questId = questId })
 				end)
 			end
@@ -579,70 +779,138 @@ function UIController._renderQuests()
 	end
 end
 
-function UIController._renderShop()
-	local scroll = refs.ShopList
-	UIController._clearList(scroll)
+-- ── Shop ──────────────────────────────────────────────────────────────────
+
+function UIController:_renderShop()
+	local body = bodies.Shop
+	UI.clear(body)
 	local data = ClientState.data
 	local order = 0
 
-	local function addHeader(text: string)
+	local function header(text: string)
 		order += 1
-		Create("TextLabel", {
-			Size = UDim2.new(1, -6, 0, 26),
-			BackgroundTransparency = 1,
-			Font = Enum.Font.GothamBold,
-			TextSize = 15,
-			TextColor3 = ACCENT,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Text = text,
+		UI.label(text, {
+			Size = UDim2.new(1, -8, 0, 22),
+			Font = Theme.fontBold,
+			TextSize = 12,
+			TextColor3 = Theme.accentLight,
 			LayoutOrder = order,
-			Parent = scroll,
+			Parent = body,
 		})
 	end
 
-	local function addItem(name: string, price: number, owned: boolean, onBuy: () -> ())
+	local function item(name: string, blurb: string, price: number, owned: boolean, onBuy: () -> ())
 		order += 1
-		local row = Create("Frame", {
-			Size = UDim2.new(1, -6, 0, 46),
-			BackgroundColor3 = PANEL,
+		local row = UI.surface({
+			Size = UDim2.new(1, -8, 0, 58),
+			BackgroundColor3 = Theme.panel,
 			BorderSizePixel = 0,
 			LayoutOrder = order,
-			Parent = scroll,
-		})
-		corner(8, row)
-		Create("TextLabel", {
-			Size = UDim2.new(0.6, 0, 1, 0),
-			Position = UDim2.new(0, 12, 0, 0),
-			BackgroundTransparency = 1,
-			Font = Enum.Font.GothamBold,
-			TextSize = 14,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextColor3 = TEXT,
-			Text = name,
+			Parent = body,
+		}, false)
+		UI.label(name, {
+			Size = UDim2.new(0.62, 0, 0, 20),
+			Position = UDim2.fromOffset(12, 8),
+			Font = Theme.fontDisplay,
+			TextSize = 15,
 			Parent = row,
 		})
-		local buy = button(owned and "Owned" or (price .. " R$"), owned and Color3.fromRGB(60, 64, 80) or Color3.fromRGB(60, 160, 90))
-		buy.Size = UDim2.new(0, 110, 0, 34)
-		buy.Position = UDim2.new(1, -120, 0.5, -17)
-		buy.Parent = row
+		UI.label(blurb, {
+			Size = UDim2.new(0.66, 0, 0, 18),
+			Position = UDim2.fromOffset(12, 30),
+			TextSize = 11,
+			TextColor3 = Theme.textMuted,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			Parent = row,
+		})
+		local buy = UI.button(owned and "Owned" or (price .. " R$"), owned and Theme.panelLight or Theme.green, {
+			Size = UDim2.fromOffset(112, 36),
+			Position = UDim2.new(1, -122, 0.5, -18),
+			TextSize = 14,
+			Parent = row,
+		})
 		if not owned then
 			buy.MouseButton1Click:Connect(onBuy)
 		end
 	end
 
-	addHeader("Gamepasses")
+	header("PERMANENT UPGRADES")
 	for key, pass in pairs(MonetizationConfig.Gamepasses) do
-		local owned = (data.gamepasses or {})[key] == true
-		addItem(pass.name, pass.price, owned, function()
+		item(pass.name, pass.blurb or "", pass.price, (data.gamepasses or {})[key] == true, function()
 			Remotes.event("PromptPurchase"):FireServer({ kind = "gamepass", key = key })
 		end)
 	end
 
-	addHeader("Boosts & Packs")
+	header("BOOSTS & PACKS")
 	for key, product in pairs(MonetizationConfig.Products) do
-		addItem(product.name, product.price, false, function()
+		item(product.name, "", product.price, false, function()
 			Remotes.event("PromptPurchase"):FireServer({ kind = "product", key = key })
 		end)
+	end
+end
+
+-- ── Refresh ───────────────────────────────────────────────────────────────
+
+function UIController.setEssence(text: string)
+	if refs.Essence then
+		refs.Essence.Text = text
+	end
+end
+
+function UIController.refresh()
+	local data = ClientState.data
+	if data.currencies then
+		refs.Gems.Text = Format.abbreviate(data.currencies.gems or 0)
+	end
+	if data.ratePerSecond then
+		refs.Rate.Text = Format.abbreviate(data.ratePerSecond) .. "/s"
+	end
+
+	local pet = data.activePet
+	if pet and pet.beastId ~= "" and refs.petName then
+		local stats = BeastInventory.stats(pet.beastId, pet.variant)
+		refs.petName.Text = beastLabel(pet.beastId, pet.variant)
+		refs.petName.TextColor3 = Theme.variant[pet.variant] or Theme.text
+		refs.petPower.Text = string.format("%s power", Format.abbreviate(stats.power))
+	end
+
+	-- Re-render whichever panel is open so it never shows stale data.
+	for name, frame in pairs(panels) do
+		if frame.Visible then
+			local renderer = UIController["_render" .. name]
+			if renderer then
+				renderer(UIController)
+			end
+		end
+	end
+end
+
+function UIController.build()
+	local gui = Create("ScreenGui", {
+		Name = "FuseABeast",
+		ResetOnSpawn = false,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
+	})
+	refs.gui = gui
+
+	buildHud(gui)
+	buildNav(gui)
+
+	local panelSpecs = {
+		{ name = "Summon", title = "Summoning Altar", size = UDim2.fromOffset(430, 430) },
+		{ name = "Chamber", title = "Fusion Chamber", size = UDim2.fromOffset(470, 520) },
+		{ name = "Beastdex", title = "Beastdex", size = UDim2.fromOffset(450, 520) },
+		{ name = "Pets", title = "Your Pets", size = UDim2.fromOffset(450, 480) },
+		{ name = "Arena", title = "The Arena", size = UDim2.fromOffset(450, 520) },
+		{ name = "Quests", title = "Quests", size = UDim2.fromOffset(450, 460) },
+		{ name = "Shop", title = "Shop", size = UDim2.fromOffset(470, 520) },
+	}
+	for _, spec in ipairs(panelSpecs) do
+		local frame, bodyFrame = UI.panel(gui, spec.title, spec.size)
+		frame.Name = spec.name .. "Panel"
+		panels[spec.name] = frame
+		bodies[spec.name] = bodyFrame
 	end
 end
 

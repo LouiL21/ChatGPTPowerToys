@@ -1,9 +1,11 @@
 --!strict
 --[[
 	Client bootstrap
-	Wires the client: builds UI, connects the server->client remotes, and pulls
-	the initial authoritative snapshot. The player can fuse within seconds of
-	joining — onboarding is the gameplay itself.
+	Builds the interface, connects the server→client streams, and pulls the
+	initial authoritative snapshot.
+
+	Onboarding is the gameplay: you land on your sanctuary with shards already
+	dropping, and the Altar is a few steps away. No tutorial gate.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,19 +17,19 @@ local UIController = require(script.Controllers.UIController)
 local EssenceController = require(script.Controllers.EssenceController)
 local NotificationController = require(script.Controllers.NotificationController)
 local FusionController = require(script.Controllers.FusionController)
+local BattleController = require(script.Controllers.BattleController)
 
--- Build interface first so state pushes have somewhere to render.
 UIController.build()
 NotificationController.init()
 FusionController.init()
+BattleController.init()
 EssenceController.init()
 
--- Re-render whenever the local cache changes.
-ClientState.Changed:connect(function(keys)
-	UIController.refresh(keys)
+ClientState.Changed:connect(function()
+	UIController.refresh()
 end)
 
--- Server -> client streams.
+-- Server → client streams.
 Remotes.event("StateUpdate").OnClientEvent:Connect(function(partial)
 	ClientState.merge(partial)
 end)
@@ -37,12 +39,24 @@ end)
 Remotes.event("FusionResult").OnClientEvent:Connect(function(result)
 	FusionController.show(result)
 end)
--- Walking up to your Altar and activating it is what opens the fusion panel.
+Remotes.event("BattleEvent").OnClientEvent:Connect(function(payload)
+	BattleController.handle(payload)
+end)
+Remotes.event("DuelChallenge").OnClientEvent:Connect(function(payload)
+	BattleController.showChallenge(payload, function(accept)
+		Remotes.event("RespondDuel"):FireServer({ accept = accept })
+	end)
+end)
+
+-- Walking up to a building is what opens its panel.
 Remotes.event("OpenFusion").OnClientEvent:Connect(function()
 	UIController.openFusion()
 end)
+Remotes.event("OpenChamber").OnClientEvent:Connect(function()
+	UIController.openChamber()
+end)
 
--- Initial full-state pull (retry until the profile is loaded server-side).
+-- Initial full-state pull, retried until the profile is loaded server-side.
 task.spawn(function()
 	local getState = Remotes.func("GetState")
 	for _ = 1, 20 do

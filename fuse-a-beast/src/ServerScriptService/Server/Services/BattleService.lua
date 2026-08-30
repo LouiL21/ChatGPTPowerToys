@@ -206,6 +206,20 @@ function BattleService:fightBoss(player: Player, payload)
 			Registry.CurrencyService:add(player, "gems", math.floor(boss.reward.gems * scale))
 			Registry.CurrencyService:add(player, "essence", math.floor(boss.reward.essence * scale))
 			Registry.QuestService:track(player, "win_battle", 1)
+			Registry.QuestService:grantAchievement(player, "first_win")
+
+			-- Clearing the whole ladder is the PvE capstone.
+			local allCleared = true
+			for _, entry in ipairs(CombatConfig.Bosses) do
+				if not data.battle.bossesCleared[entry.id] then
+					allCleared = false
+					break
+				end
+			end
+			if allCleared then
+				Registry.QuestService:grantAchievement(player, "boss_slayer")
+			end
+
 			ServerNet.notify(player, string.format("You beat %s!", boss.name), "success")
 		else
 			data.battle.losses += 1
@@ -296,6 +310,7 @@ function BattleService:respond(player: Player, payload)
 					data.battle.wins += 1
 					Registry.CurrencyService:add(participant, "gems", CombatConfig.PVP_WIN_REWARD.gems)
 					Registry.QuestService:track(participant, "win_battle", 1)
+					Registry.QuestService:grantAchievement(participant, "first_win")
 				else
 					data.battle.losses += 1
 					-- Consolation: never leave a duel with nothing.

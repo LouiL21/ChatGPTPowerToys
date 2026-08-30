@@ -18,7 +18,8 @@ QuestConfig.DailyPool = {
 	{ id = "collect_essence_5k", desc = "Collect 5,000 essence", event = "collect_essence", target = 5000, reward = { gems = 12 } },
 	{ id = "display_beast", desc = "Display a beast in your Sanctuary", event = "set_display", target = 1, reward = { gems = 8 } },
 	{ id = "fuse_void", desc = "Fuse using the Void element 5 times", event = "fuse_void", target = 5, reward = { gems = 15 } },
-	{ id = "visit_player", desc = "Visit another player's Sanctuary", event = "visit", target = 1, reward = { gems = 10 } },
+	-- NOTE: no "visit another sanctuary" quest until visiting is tracked — a
+	-- daily that cannot be completed is worse than one fewer daily.
 	{ id = "collect_shards_40", desc = "Collect 40 shards from your nodes", event = "collect_shard", target = 40, reward = { gems = 12 } },
 	{ id = "buy_upgrade", desc = "Buy any Sanctuary upgrade", event = "tycoon_purchase", target = 1, reward = { gems = 18 } },
 }

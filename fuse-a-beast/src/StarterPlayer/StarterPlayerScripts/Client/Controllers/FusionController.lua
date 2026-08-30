@@ -51,14 +51,26 @@ function FusionController.show(result)
 	Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = card })
 	Create("UIStroke", { Thickness = result.isNew and 4 or 2, Color = color, Parent = card })
 
+	-- The banner tells the player which of the three outcomes just happened.
+	local banner
+	if result.isNew then
+		banner = "★ NEW DISCOVERY ★"
+	elseif result.kind == "variant" then
+		banner = result.success and "★ VARIANT UP! ★" or "Fusion failed…"
+	elseif result.kind == "hybrid" then
+		banner = "Hybrid created!"
+	else
+		banner = "Summoned!"
+	end
+
 	Create("TextLabel", {
 		Size = UDim2.new(1, 0, 0, 24),
 		Position = UDim2.new(0, 0, 0, 10),
 		BackgroundTransparency = 1,
 		Font = Enum.Font.GothamBlack,
 		TextSize = 16,
-		TextColor3 = color,
-		Text = result.isNew and "★ NEW DISCOVERY ★" or "Fused!",
+		TextColor3 = (result.kind == "variant" and not result.success) and Color3.fromRGB(190, 120, 120) or color,
+		Text = banner,
 		Parent = card,
 	})
 	Create("TextLabel", {
