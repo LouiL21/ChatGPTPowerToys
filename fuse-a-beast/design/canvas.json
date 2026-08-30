@@ -1,0 +1,49 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Redesign" },
+    { "id": "page-2", "name": "Directions" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Main — Fusion Altar", "page": "page-1" },
+    { "file": "Discovery.dc.html", "x": 470, "y": 0, "w": 390, "h": 844, "title": "Discovery reveal", "page": "page-1" },
+    { "file": "Beastdex.dc.html", "x": 940, "y": 0, "w": 390, "h": 844, "title": "Beastdex", "page": "page-1" },
+    { "file": "Shop.dc.html", "x": 1410, "y": 0, "w": 390, "h": 844, "title": "Shop", "page": "page-1" },
+    { "file": "DirectionBright.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "B — Bright & friendly", "page": "page-2" },
+    { "file": "DirectionNeon.dc.html", "x": 470, "y": 0, "w": 390, "h": 844, "title": "C — Neon arcade", "page": "page-2" }
+  ],
+  "annotations": [
+    {
+      "id": "diagnosis",
+      "x": 0,
+      "y": -190,
+      "w": 390,
+      "text": "The problem isn't the engine — it's that the build reads like a settings menu.\n\nSame information, restyled so it reads as a game: a glowing Altar as the hero, chunky tactile shards you want to press, one obvious action.",
+      "page": "page-1"
+    },
+    {
+      "id": "reveal-note",
+      "x": 470,
+      "y": -190,
+      "w": 390,
+      "text": "This screen is the growth engine — the moment players screenshot and post.\n\nThe odds line ('1 in 12,400') is the bit that makes a rare drop worth sharing. Currently the game shows a small grey card here.",
+      "page": "page-1"
+    },
+    {
+      "id": "dex-note",
+      "x": 940,
+      "y": -190,
+      "w": 390,
+      "text": "Grid, not a list. Collection games live on the wall-of-things-I-own feeling, and locked slots showing their rarity are what pull players back to fuse again.",
+      "page": "page-1"
+    },
+    {
+      "id": "directions-note",
+      "x": 0,
+      "y": -150,
+      "w": 860,
+      "text": "Two alternates to the dark 'Arcane Workshop' direction, in case that read isn't right. B is bright and friendly (skews younger, matches the big farming sims). C is neon arcade (skews older/teen). Pick one and I'll build it out properly.",
+      "page": "page-2"
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

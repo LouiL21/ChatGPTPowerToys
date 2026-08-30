@@ -23,3 +23,6 @@ sourcemap.json
 # Secrets / local overrides
 *.local
 .env
+
+# Generated design canvas (rebuilt from design/*.dc.html + canvas.json)
+design/fuse-a-beast-ui.html
