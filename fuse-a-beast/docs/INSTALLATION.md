@@ -48,7 +48,12 @@ diffable.
 ## Using ProfileStore (recommended for launch)
 
 1. Install Wally and run `wally install` in `fuse-a-beast/` (adds `Packages/`).
-2. Point `DataService` at ProfileStore behind the existing backend interface
+2. Add a `Packages` mapping to `default.project.json` under `ReplicatedStorage`
+   (it's omitted by default so Rojo never looks for a folder that isn't there):
+   ```json
+   "Packages": { "$path": { "optional": "Packages" } }
+   ```
+3. Point `DataService` at ProfileStore behind the existing backend interface
    (`load` / `save` / `release`). The abstraction is in
    `src/ServerScriptService/Server/Data/Backends/`.
 
