@@ -71,8 +71,12 @@ I recommend the **VS Code path** because it has buttons instead of typing.
 6. Switch to **Roblox Studio** → open the **Rojo** plugin toolbar → **Connect**.
    The whole game tree syncs into your open baseplate.
 
-**Press the Play button (▶) in Studio.** You should spawn, see the top bar, get a
-"Welcome, Alchemist!" message, pick 2 elements, and press **FUSE**. 🎉
+**Press the Play button (▶) in Studio.** You should land on your own sanctuary
+with the **How to Play** card open. Close it, run over a few shard drops, walk to
+the **Altar** and summon a beast. 🎉
+
+> The How to Play card only shows on a player's *first ever* join. To see it
+> again, press the **?** next to the resource bar.
 
 > **Prefer no live-sync, just want to see it once?** Instead of steps 5-6, run this
 > in a terminal opened at the `fuse-a-beast` folder:

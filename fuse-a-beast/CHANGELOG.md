@@ -4,6 +4,16 @@ All notable changes to Fuse a Beast are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.6] — 2026-08-30
+
+### Added
+- **How to Play card on a player's first ever join.** Five steps covering the
+  loop, with a close box top-right and a LET'S GO button — the game runs behind
+  it, so it is a card and not a gate. The seen flag lives on the profile, so it
+  follows the player across devices and never shows twice; the remote is a
+  one-way latch, so a hostile client can at worst skip its own tutorial. A `?`
+  beside the resource bar reopens it.
+
 ## [0.3.5] — 2026-08-30
 
 ### Added
