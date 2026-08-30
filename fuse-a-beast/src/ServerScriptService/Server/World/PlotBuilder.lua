@@ -101,6 +101,118 @@ local function buildGround(model: Model, origin: CFrame)
 			parent = model,
 		})
 	end
+
+	-- Glowing capstones along the wall line. A flat slab reads as unfinished; a
+	-- repeated lit detail reads as built, and it costs nine parts.
+	for i = -1, 1 do
+		for _, spec in ipairs({
+			{ x = i * (half * 0.62), z = -half },
+			{ x = -half, z = i * (half * 0.62) },
+			{ x = half, z = i * (half * 0.62) },
+		}) do
+			local cap = Build.part({
+				size = Vector3.new(3.2, 3.2, 3.2),
+				cframe = origin * CFrame.new(Vector3.new(spec.x, 6.2, spec.z)) * CFrame.Angles(0, math.rad(45), 0),
+				color = PlotConfig.COLORS.altarGlow,
+				material = Enum.Material.Neon,
+				canCollide = false,
+				name = "WallCap",
+				parent = model,
+			})
+			Build.glow(cap, PlotConfig.COLORS.altarGlow, 12, 1.2)
+		end
+	end
+end
+
+--[[
+	Scatters trees and rocks around the sanctuary. Purely decorative, but an
+	empty green square is the single biggest reason a procedural world reads as
+	a prototype rather than a game. Placement is deterministic per plot and
+	keeps clear of the altar, chamber and pad rows so nothing blocks the loop.
+]]
+local function buildScenery(model: Model, origin: CFrame, index: number)
+	local rng = Random.new(index * 7919)
+	local half = PlotConfig.PLOT_SIZE / 2
+
+	local KEEP_CLEAR = {
+		{ point = PlotConfig.ALTAR_OFFSET, radius = 22 },
+		{ point = PlotConfig.CHAMBER_OFFSET, radius = 20 },
+		{ point = PlotConfig.SPAWN_OFFSET, radius = 14 },
+		{ point = PlotConfig.HABITAT_CENTRE, radius = 16 },
+	}
+
+	local function isClear(offset: Vector3): boolean
+		-- Keep out of the pad rows entirely.
+		if offset.Z > PlotConfig.PAD_ROW_Z - PlotConfig.PAD_ROW_GAP - PlotConfig.PAD_SIZE then
+			return false
+		end
+		for _, zone in ipairs(KEEP_CLEAR) do
+			if (Vector3.new(offset.X, 0, offset.Z) - Vector3.new(zone.point.X, 0, zone.point.Z)).Magnitude < zone.radius then
+				return false
+			end
+		end
+		for _, node in ipairs(PlotConfig.Nodes) do
+			if (Vector3.new(offset.X, 0, offset.Z) - Vector3.new(node.offset.X, 0, node.offset.Z)).Magnitude < 14 then
+				return false
+			end
+		end
+		return true
+	end
+
+	local placed = 0
+	local attempts = 0
+	while placed < 22 and attempts < 220 do
+		attempts += 1
+		local offset = Vector3.new(rng:NextNumber(-half + 8, half - 8), 0, rng:NextNumber(-half + 8, half - 10))
+		if isClear(offset) then
+			placed += 1
+			local base = toWorld(origin, offset)
+
+			if rng:NextNumber() < 0.55 then
+				-- Tree: trunk plus two stacked canopy balls.
+				local height = rng:NextNumber(7, 12)
+				Build.part({
+					size = Vector3.new(1.8, height, 1.8),
+					position = base + Vector3.new(0, height / 2, 0),
+					color = Color3.fromRGB(84, 60, 44),
+					material = Enum.Material.Wood,
+					canCollide = false,
+					name = "Trunk",
+					parent = model,
+				})
+				local leafColor = Color3.fromRGB(56, 120, 62):Lerp(Color3.fromRGB(92, 168, 96), rng:NextNumber())
+				for i = 1, 2 do
+					local spread = rng:NextNumber(6, 9) - i * 1.8
+					Build.part({
+						size = Vector3.new(spread, spread * 0.8, spread),
+						position = base + Vector3.new(0, height + i * 2.2 - 1.5, 0),
+						color = leafColor,
+						material = Enum.Material.Grass,
+						shape = Enum.PartType.Ball,
+						canCollide = false,
+						name = "Canopy",
+						parent = model,
+					})
+				end
+			else
+				-- Rock cluster.
+				local count = rng:NextInteger(2, 3)
+				for i = 1, count do
+					local size = rng:NextNumber(2, 4.5) / i
+					Build.part({
+						size = Vector3.new(size * 1.4, size, size * 1.2),
+						cframe = CFrame.new(base + Vector3.new(rng:NextNumber(-2, 2), size * 0.35, rng:NextNumber(-2, 2)))
+							* CFrame.Angles(rng:NextNumber(-0.2, 0.2), rng:NextNumber(0, 6), rng:NextNumber(-0.2, 0.2)),
+						color = Color3.fromRGB(96, 92, 116),
+						material = Enum.Material.Rock,
+						canCollide = false,
+						name = "Rock",
+						parent = model,
+					})
+				end
+			end
+		end
+	end
 end
 
 local function buildAltar(model: Model, origin: CFrame): (BasePart, BasePart)
@@ -317,6 +429,7 @@ function PlotBuilder.build(index: number, origin: CFrame, parent: Instance): Plo
 	model.Parent = parent
 
 	buildGround(model, origin)
+	buildScenery(model, origin, index)
 	local altar, altarCrystal = buildAltar(model, origin)
 	local chamber, chamberPillar = buildChamber(model, origin)
 

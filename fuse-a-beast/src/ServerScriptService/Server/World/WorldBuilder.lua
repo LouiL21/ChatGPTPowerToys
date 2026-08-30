@@ -55,6 +55,36 @@ local function buildSky()
 		sky.StarCount = 3000
 		sky.Parent = Lighting
 	end
+
+	--[[
+		Post-processing. Untextured procedural geometry looks cheap under flat
+		lighting no matter how well it is arranged; bloom on the neon and a mild
+		grade over the whole frame is what turns "coloured boxes" into a place.
+		All three are single instances with no per-frame cost.
+	]]
+	if not Lighting:FindFirstChildOfClass("BloomEffect") then
+		local bloom = Instance.new("BloomEffect")
+		bloom.Intensity = 0.9
+		bloom.Size = 32
+		bloom.Threshold = 1.1
+		bloom.Parent = Lighting
+	end
+
+	if not Lighting:FindFirstChildOfClass("ColorCorrectionEffect") then
+		local grade = Instance.new("ColorCorrectionEffect")
+		grade.Brightness = 0.02
+		grade.Contrast = 0.14
+		grade.Saturation = 0.16
+		grade.TintColor = Color3.fromRGB(255, 246, 250)
+		grade.Parent = Lighting
+	end
+
+	if not Lighting:FindFirstChildOfClass("SunRaysEffect") then
+		local rays = Instance.new("SunRaysEffect")
+		rays.Intensity = 0.09
+		rays.Spread = 0.7
+		rays.Parent = Lighting
+	end
 end
 
 local function buildHub(parent: Instance)

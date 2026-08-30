@@ -60,47 +60,57 @@ end
 local function buildHud(gui: Instance)
 	local bar = UI.surface({
 		Name = "TopBar",
-		Size = UDim2.fromOffset(360, 52),
-		Position = UDim2.new(0.5, -180, 0, 8),
+		Size = UDim2.fromOffset(392, 56),
+		Position = UDim2.new(0.5, -196, 0, 10),
 		BackgroundColor3 = Theme.panel,
 		BorderSizePixel = 0,
 		Parent = gui,
 	})
+	UI.gradient(bar, Theme.panelLight, Theme.panel)
 	Create("UIListLayout", {
 		FillDirection = Enum.FillDirection.Horizontal,
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		VerticalAlignment = Enum.VerticalAlignment.Center,
-		Padding = UDim.new(0, 14),
+		Padding = UDim.new(0, 6),
 		Parent = bar,
 	})
 
-	local function stat(name: string, color: Color3, width: number)
-		local holder = Create("Frame", {
-			Size = UDim2.fromOffset(width, 40),
-			BackgroundTransparency = 1,
+	-- Each stat is its own inset chip. A row of bare numbers reads as debug
+	-- output; three framed chips read as a game HUD.
+	local function stat(name: string, glyph: string, color: Color3, width: number)
+		local holder = UI.surface({
+			Size = UDim2.fromOffset(width, 42),
+			BackgroundColor3 = Theme.bg,
+			BorderSizePixel = 0,
 			Parent = bar,
+		}, false)
+		UI.label(glyph, {
+			Size = UDim2.fromOffset(24, 42),
+			Position = UDim2.fromOffset(8, 0),
+			TextSize = 17,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Parent = holder,
 		})
 		refs[name] = UI.label("0", {
-			Size = UDim2.new(1, 0, 0, 22),
+			Size = UDim2.new(1, -38, 0, 20),
+			Position = UDim2.fromOffset(34, 3),
 			Font = Theme.fontDisplay,
-			TextSize = 20,
+			TextSize = 18,
 			TextColor3 = color,
-			TextXAlignment = Enum.TextXAlignment.Center,
 			Parent = holder,
 		})
 		UI.label(string.upper(name), {
-			Size = UDim2.new(1, 0, 0, 12),
-			Position = UDim2.fromOffset(0, 24),
+			Size = UDim2.new(1, -38, 0, 12),
+			Position = UDim2.fromOffset(34, 25),
 			Font = Theme.fontBold,
-			TextSize = 10,
+			TextSize = 9,
 			TextColor3 = Theme.textMuted,
-			TextXAlignment = Enum.TextXAlignment.Center,
 			Parent = holder,
 		})
 	end
-	stat("Essence", Theme.goldLight, 128)
-	stat("Gems", Theme.cyan, 74)
-	stat("Rate", Theme.accentLight, 96)
+	stat("Essence", "✦", Theme.goldLight, 140)
+	stat("Gems", "◆", Theme.cyan, 92)
+	stat("Rate", "⟳", Theme.accentLight, 110)
 
 	-- Active pet card, bottom-left: your fighter, always visible.
 	local petCard = UI.surface({
