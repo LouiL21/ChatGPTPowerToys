@@ -42,7 +42,8 @@ function CollectionService:setDisplay(player: Player, payload)
 		return
 	end
 
-	local slots = Registry.MonetizationService:getDisplaySlots(player)
+	-- Physical habitat capacity is the limit now (tycoon purchases + gamepass).
+	local slots = Registry.PlotService:habitatSlots(player)
 	local seen: { [string]: boolean } = {}
 	local newDisplay: { string } = {}
 	for _, beastId in ipairs(payload.beasts) do
@@ -58,6 +59,8 @@ function CollectionService:setDisplay(player: Player, payload)
 
 	data.display = newDisplay
 	Registry.QuestService:track(player, "set_display", 1)
+	-- Respawn the physical creatures so the sanctuary matches the new roster.
+	Registry.BeastService:refresh(player)
 	Registry.StateSync:push(player, {
 		display = data.display,
 		ratePerSecond = Registry.EssenceService:getRate(player),

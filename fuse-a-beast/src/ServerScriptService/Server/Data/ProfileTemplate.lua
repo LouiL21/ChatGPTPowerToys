@@ -37,8 +37,16 @@ local ProfileTemplate = {
 	-- `count` = duplicates owned; `level` = merge level (raises display boost).
 	codex = {} :: { [string]: { count: number, level: number } },
 
-	-- ordered list of beast ids currently displayed in the Sanctuary
+	-- ordered list of beast ids physically living in the Sanctuary
 	display = {} :: { string },
+
+	-- Sanctuary (3D plot) progression, driven by the tycoon buy-pads.
+	plot = {
+		nodeTier = 1, -- shard emission speed tier for all element nodes
+		habitatSlots = 0, -- EXTRA beast slots bought on top of the base allowance
+		unlockedNodes = {} :: { [string]: boolean }, -- elementId -> true
+		purchasedPads = {} :: { [string]: boolean }, -- padId -> true
+	},
 
 	stats = {
 		totalFusions = 0,

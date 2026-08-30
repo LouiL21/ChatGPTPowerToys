@@ -125,15 +125,27 @@ function UIController.build()
 	stat("Gems")
 	stat("Rate")
 
-	-- Central fusion panel.
+	-- Central fusion panel. Hidden until the player walks up to their Altar and
+	-- activates it — the world is the way into the UI, not a permanent overlay.
 	local fusion = Create("Frame", {
 		Name = "FusionPanel",
 		Size = UDim2.new(0, 360, 0, 300),
 		Position = UDim2.new(0.5, -180, 0.5, -170),
 		BackgroundColor3 = PANEL,
 		BorderSizePixel = 0,
+		Visible = false,
 		Parent = gui,
 	})
+	refs.fusionPanel = fusion
+
+	local closeFusion = button("X", Color3.fromRGB(200, 60, 70))
+	closeFusion.Size = UDim2.new(0, 30, 0, 26)
+	closeFusion.Position = UDim2.new(1, -34, 0, 4)
+	closeFusion.ZIndex = 3
+	closeFusion.Parent = fusion
+	closeFusion.MouseButton1Click:Connect(function()
+		fusion.Visible = false
+	end)
 	corner(14, fusion)
 	pad(14, fusion)
 	Create("UIListLayout", {
@@ -214,7 +226,7 @@ function UIController.build()
 		Parent = nav,
 	})
 	local navSpecs = {
-		{ text = "Tap +", action = function() Remotes.event("Collect"):FireServer() end },
+		{ text = "Fuse", action = function() UIController.openFusion() end },
 		{ text = "Altar", action = function() Remotes.event("UpgradeAltar"):FireServer() end },
 		{ text = "Beastdex", action = function() UIController.openPanel("Beastdex") end },
 		{ text = "Quests", action = function() UIController.openPanel("Quests") end },
@@ -286,6 +298,15 @@ function UIController._makeScrollPanel(title: string): Frame
 	})
 	refs[title .. "List"] = scroll
 	return frame
+end
+
+-- Opened by the Altar's ProximityPrompt (server fires "OpenFusion"), or from the
+-- Fuse nav button as a fallback for players not standing at their Altar.
+function UIController.openFusion()
+	if refs.fusionPanel then
+		refs.fusionPanel.Visible = true
+		UIController._refreshSelection()
+	end
 end
 
 function UIController.openPanel(name: string)

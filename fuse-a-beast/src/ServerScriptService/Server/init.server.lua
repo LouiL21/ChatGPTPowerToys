@@ -31,6 +31,12 @@ local CollectionService = require(Services.CollectionService)
 local QuestService = require(Services.QuestService)
 local DailyRewardService = require(Services.DailyRewardService)
 local FusionService = require(Services.FusionService)
+-- World services: the physical sanctuary layer.
+local PlotService = require(Services.PlotService)
+local PickupService = require(Services.PickupService)
+local NodeService = require(Services.NodeService)
+local BeastService = require(Services.BeastService)
+local TycoonService = require(Services.TycoonService)
 
 -- Registry: every service is reachable as Registry.<Name>.
 local Registry = {}
@@ -45,6 +51,13 @@ local allServices = {
 	QuestService,
 	DailyRewardService,
 	FusionService,
+	-- PlotService starts before the services that decorate a plot, so the island
+	-- and every sanctuary exist before anything tries to spawn into one.
+	PlotService,
+	PickupService,
+	NodeService,
+	BeastService,
+	TycoonService,
 }
 for _, service in ipairs(allServices) do
 	Registry[service.Name] = service

@@ -1,0 +1,206 @@
+--!strict
+--[[
+	BeastService
+	Puts the collection into the world. Beasts on a player's display list are
+	spawned as physical creatures that wander their sanctuary and periodically
+	drop essence orbs the owner runs over.
+
+	Two things this earns the game:
+	  1. Status is visible — a Mythic towers over the plot and glows, so a
+	     visitor can see what you've built without opening a menu.
+	  2. Active play pays. Displayed beasts already raise the passive rate; the
+	     orbs add roughly 40% on top for players who actually run around, without
+	     ever making idle progression feel pointless.
+
+	All beasts across the server are driven by ONE movement loop over anchored
+	parts, so a full island costs no physics simulation.
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage.Shared
+local PlotConfig = require(Shared.Config.PlotConfig)
+local Logger = require(Shared.Util.Logger).new("Beast")
+
+local BeastModelFactory = require(script.Parent.Parent.World.BeastModelFactory)
+
+local BeastService = { Name = "BeastService" }
+local Registry: any
+
+type Agent = {
+	model: Model,
+	userId: number,
+	position: Vector3,
+	target: Vector3,
+	facing: number,
+	nextOrb: number,
+	speed: number,
+	homeCentre: Vector3,
+}
+
+local _agents: { Agent } = {}
+local ORB_SHARE = 0.4 -- fraction of passive rate paid out as collectable orbs
+
+function BeastService:Init(registry)
+	Registry = registry
+end
+
+local function randomPointInHabitat(centre: Vector3): Vector3
+	local angle = math.random() * math.pi * 2
+	local radius = math.sqrt(math.random()) * PlotConfig.HABITAT_RADIUS
+	return centre + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+end
+
+-- Rebuild every physical beast on a player's plot from their display list.
+function BeastService:refresh(player: Player)
+	local handle = Registry.PlotService:getHandle(player)
+	local data = Registry.DataService:get(player)
+	if not handle or not data then
+		return
+	end
+
+	-- Drop existing agents for this player.
+	for i = #_agents, 1, -1 do
+		if _agents[i].userId == player.UserId then
+			table.remove(_agents, i)
+		end
+	end
+	handle.beastFolder:ClearAllChildren()
+
+	local centre = (handle.origin * CFrame.new(PlotConfig.HABITAT_CENTRE)).Position
+	local slots = Registry.PlotService:habitatSlots(player)
+
+	local spawned = 0
+	for _, beastId in ipairs(data.display) do
+		if spawned >= slots then
+			break
+		end
+		local entry = data.codex[beastId]
+		if entry then
+			local model = BeastModelFactory.create(beastId, entry.level)
+			if model then
+				local position = randomPointInHabitat(centre)
+				BeastModelFactory.pivot(model, CFrame.new(position))
+				model.Parent = handle.beastFolder
+
+				table.insert(_agents, {
+					model = model,
+					userId = player.UserId,
+					position = position,
+					target = randomPointInHabitat(centre),
+					facing = 0,
+					nextOrb = os.clock() + math.random() * PlotConfig.ESSENCE_ORB_INTERVAL,
+					speed = 3 + math.random() * 2.5,
+					homeCentre = centre,
+				})
+				spawned += 1
+			end
+		end
+	end
+
+	Logger:debug("Spawned", spawned, "beasts for", player.Name)
+end
+
+-- Plays the materialisation moment at the altar when a fusion resolves.
+function BeastService:playFusionBurst(player: Player, rarity: string)
+	local handle = Registry.PlotService:getHandle(player)
+	if not handle then
+		return
+	end
+	local crystal = handle.altarCrystal
+	local original = crystal.Size
+	local light = crystal:FindFirstChildOfClass("PointLight")
+
+	task.spawn(function()
+		for i = 1, 8 do
+			crystal.Size = original * (1 + i * 0.18)
+			if light then
+				light.Brightness = 3 + i
+			end
+			task.wait(0.03)
+		end
+		for i = 8, 1, -1 do
+			crystal.Size = original * (1 + i * 0.18)
+			if light then
+				light.Brightness = 3 + i
+			end
+			task.wait(0.03)
+		end
+		crystal.Size = original
+		if light then
+			light.Brightness = 3
+		end
+	end)
+end
+
+function BeastService:_dropOrb(agent: Agent, player: Player)
+	local rate = Registry.EssenceService:getRate(player)
+	local count = 0
+	for _, other in ipairs(_agents) do
+		if other.userId == agent.userId then
+			count += 1
+		end
+	end
+	if count == 0 then
+		return
+	end
+	local amount = rate * PlotConfig.ESSENCE_ORB_INTERVAL * ORB_SHARE / count
+	if amount <= 0 then
+		return
+	end
+	Registry.PickupService:spawn(player, "essence", { amount = amount }, agent.position + Vector3.new(0, 2.5, 0))
+end
+
+function BeastService:Start()
+	Registry.PlotService.PlotAssigned:connect(function(player)
+		self:refresh(player)
+	end)
+	Registry.PlotService.PlotReleased:connect(function(player)
+		for i = #_agents, 1, -1 do
+			if _agents[i].userId == player.UserId then
+				table.remove(_agents, i)
+			end
+		end
+	end)
+
+	-- Wander + orb loop, shared across every beast on the server.
+	RunService.Heartbeat:Connect(function(dt)
+		local now = os.clock()
+		for _, agent in ipairs(_agents) do
+			if agent.model.Parent then
+				local toTarget = agent.target - agent.position
+				local distance = toTarget.Magnitude
+
+				if distance < 2 then
+					agent.target = randomPointInHabitat(agent.homeCentre)
+				else
+					local step = math.min(agent.speed * dt, distance)
+					agent.position += toTarget.Unit * step
+					-- Ease the facing toward travel direction so turns look natural.
+					local wanted = math.atan2(-toTarget.X, -toTarget.Z)
+					local delta = (wanted - agent.facing + math.pi) % (math.pi * 2) - math.pi
+					agent.facing += delta * math.min(1, dt * 5)
+				end
+
+				-- A gentle bob sells "alive" without any animation rig.
+				local bob = math.sin(now * 3 + agent.speed) * 0.18
+				BeastModelFactory.pivot(
+					agent.model,
+					CFrame.new(agent.position + Vector3.new(0, bob, 0)) * CFrame.Angles(0, agent.facing, 0)
+				)
+
+				if now >= agent.nextOrb then
+					agent.nextOrb = now + PlotConfig.ESSENCE_ORB_INTERVAL
+					local player = Players:GetPlayerByUserId(agent.userId)
+					if player and Registry.DataService:isLoaded(player) then
+						self:_dropOrb(agent, player)
+					end
+				end
+			end
+		end
+	end)
+end
+
+return BeastService

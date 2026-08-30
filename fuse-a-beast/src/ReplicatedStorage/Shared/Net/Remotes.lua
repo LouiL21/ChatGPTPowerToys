@@ -33,6 +33,7 @@ Remotes.ServerEvents = {
 	"StateUpdate", -- authoritative (partial or full) player-state replication
 	"Notify", -- transient toast/message
 	"FusionResult", -- result of a fusion (for animation + discovery popup)
+	"OpenFusion", -- player activated the Altar; client opens the fusion panel
 }
 
 -- RemoteFunctions (request/response). Kept minimal — mutations go through events.

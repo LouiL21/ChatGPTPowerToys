@@ -37,6 +37,10 @@ end)
 Remotes.event("FusionResult").OnClientEvent:Connect(function(result)
 	FusionController.show(result)
 end)
+-- Walking up to your Altar and activating it is what opens the fusion panel.
+Remotes.event("OpenFusion").OnClientEvent:Connect(function()
+	UIController.openFusion()
+end)
 
 -- Initial full-state pull (retry until the profile is loaded server-side).
 task.spawn(function()

@@ -1,0 +1,236 @@
+--!strict
+--[[
+	PlotService
+	Owns the physical sanctuaries: builds the island on server start, hands a
+	free plot to each arriving player, applies their saved progression to the
+	geometry, teleports them onto it, and frees the plot when they leave.
+
+	Everything physical about a player hangs off the PlotHandle this service
+	stores, so other services (nodes, beasts, pads) never search the workspace.
+]]
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage.Shared
+local PlotConfig = require(Shared.Config.PlotConfig)
+local GameConfig = require(Shared.Config.GameConfig)
+local Signal = require(Shared.Util.Signal)
+local Logger = require(Shared.Util.Logger).new("Plot")
+
+local World = script.Parent.Parent.World
+local WorldBuilder = require(World.WorldBuilder)
+local PlotBuilder = require(World.PlotBuilder)
+local ServerNet = require(script.Parent.Parent.ServerNet)
+
+local PlotService = {
+	Name = "PlotService",
+	PlotAssigned = Signal.new(), -- (player, handle)
+	PlotReleased = Signal.new(), -- (player, handle)
+}
+local Registry: any
+
+local _plots: { any } = {} -- index -> PlotHandle
+local _ownerByIndex: { [number]: Player } = {}
+local _indexByUser: { [number]: number } = {}
+
+function PlotService:Init(registry)
+	Registry = registry
+end
+
+function PlotService:getHandle(player: Player)
+	local index = _indexByUser[player.UserId]
+	return index and _plots[index] or nil
+end
+
+function PlotService:getOwner(index: number): Player?
+	return _ownerByIndex[index]
+end
+
+-- Is this world position inside `player`'s plot? Used to keep pickups private
+-- to their owner without a per-part ownership lookup.
+function PlotService:isOnPlot(player: Player, position: Vector3): boolean
+	local handle = self:getHandle(player)
+	if not handle then
+		return false
+	end
+	local local_ = handle.origin:PointToObjectSpace(position)
+	local half = PlotConfig.PLOT_SIZE / 2
+	return math.abs(local_.X) <= half and math.abs(local_.Z) <= half
+end
+
+-- Apply saved progression to the plot's geometry.
+function PlotService:applyProgression(player: Player)
+	local handle = self:getHandle(player)
+	local data = Registry.DataService:get(player)
+	if not handle or not data then
+		return
+	end
+
+	-- Element nodes: default-unlocked ones plus anything bought.
+	for _, spec in ipairs(PlotConfig.Nodes) do
+		local node = handle.nodes[spec.element]
+		if node then
+			local unlocked = spec.unlockedByDefault or data.plot.unlockedNodes[spec.element] == true
+			node.unlocked = unlocked
+			node.crystal.Transparency = unlocked and 0 or 0.75
+			node.crystal.Material = unlocked and Enum.Material.Neon or Enum.Material.Glass
+			local light = node.crystal:FindFirstChildOfClass("PointLight")
+			if light then
+				light.Enabled = unlocked
+			end
+		end
+	end
+
+	-- Buy pads: purchased ones go green and stop charging.
+	for _, spec in ipairs(PlotConfig.BuyPads) do
+		local pad = handle.pads[spec.id]
+		if pad then
+			local purchased = data.plot.purchasedPads[spec.id] == true
+			pad.purchased = purchased
+			pad.pad.Color = purchased and Color3.fromRGB(77, 191, 89) or PlotConfig.COLORS.locked
+			pad.pad.Transparency = purchased and 0.6 or 0.25
+			pad.label.Text = purchased and (spec.label .. "\nOWNED") or string.format("%s\n%d", spec.label, spec.cost)
+		end
+	end
+
+	handle.sign.Text = player.DisplayName .. "'s Sanctuary"
+end
+
+-- Single source of truth for "how many beasts can physically live here":
+-- the base allowance, plus tycoon habitat purchases, plus any gamepass bonus.
+function PlotService:habitatSlots(player: Player): number
+	local data = Registry.DataService:get(player)
+	if not data then
+		return PlotConfig.BASE_HABITAT_SLOTS
+	end
+	local gamepassBonus = Registry.MonetizationService:getDisplaySlots(player) - GameConfig.DISPLAY_SLOT_BASE
+	return PlotConfig.BASE_HABITAT_SLOTS + data.plot.habitatSlots + math.max(0, gamepassBonus)
+end
+
+local function firstFreeIndex(): number?
+	for i = 1, PlotConfig.PLOT_COUNT do
+		if _ownerByIndex[i] == nil then
+			return i
+		end
+	end
+	return nil
+end
+
+function PlotService:_assign(player: Player)
+	local index = firstFreeIndex()
+	if not index then
+		Logger:warn("No free plot for", player.Name)
+		ServerNet.notify(player, "All sanctuaries are occupied on this island.", "warn")
+		return
+	end
+
+	_ownerByIndex[index] = player
+	_indexByUser[player.UserId] = index
+
+	local handle = _plots[index]
+	self:applyProgression(player)
+	self:_bindAltar(player, handle)
+	Logger:info("Assigned plot", index, "to", player.Name)
+	self.PlotAssigned:fire(player, handle)
+
+	-- Place the player on their sanctuary.
+	self:teleportHome(player)
+end
+
+-- The Altar's ProximityPrompt is what opens the fusion panel — the UI is now
+-- reached by walking to a place in the world, not by a button that is always
+-- on screen. Connections are tracked per plot and torn down on release.
+local _altarConnections: { [number]: RBXScriptConnection } = {}
+
+function PlotService:_bindAltar(player: Player, handle)
+	local existing = _altarConnections[handle.index]
+	if existing then
+		existing:Disconnect()
+	end
+
+	local prompt = handle.altar:FindFirstChild("AltarPrompt") :: ProximityPrompt?
+	if not prompt then
+		return
+	end
+
+	_altarConnections[handle.index] = prompt.Triggered:Connect(function(triggering)
+		-- Visitors can admire the altar; only the owner can fuse at it.
+		if triggering ~= player then
+			ServerNet.notify(triggering, "This is someone else's Altar. Head home to fuse!", "warn")
+			return
+		end
+		ServerNet.fire(player, "OpenFusion", { open = true })
+	end)
+end
+
+function PlotService:teleportHome(player: Player)
+	local handle = self:getHandle(player)
+	if not handle then
+		return
+	end
+	local target = (handle.origin * CFrame.new(PlotConfig.SPAWN_OFFSET)).Position + Vector3.new(0, 5, 0)
+
+	local function place(character: Model)
+		local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if root then
+			character:PivotTo(CFrame.new(target))
+		end
+	end
+
+	if player.Character then
+		place(player.Character)
+	else
+		local connection
+		connection = player.CharacterAdded:Connect(function(character)
+			connection:Disconnect()
+			task.wait(0.2)
+			place(character)
+		end)
+	end
+end
+
+function PlotService:_release(player: Player)
+	local index = _indexByUser[player.UserId]
+	if not index then
+		return
+	end
+	local handle = _plots[index]
+	self.PlotReleased:fire(player, handle)
+
+	-- Clear anything transient so the next owner gets a clean sanctuary.
+	handle.pickupFolder:ClearAllChildren()
+	handle.beastFolder:ClearAllChildren()
+	handle.sign.Text = "Empty Sanctuary"
+
+	local altarConnection = _altarConnections[index]
+	if altarConnection then
+		altarConnection:Disconnect()
+		_altarConnections[index] = nil
+	end
+
+	_ownerByIndex[index] = nil
+	_indexByUser[player.UserId] = nil
+	Logger:info("Released plot", index)
+end
+
+function PlotService:Start()
+	local world = WorldBuilder.build()
+	local plotsFolder = world:FindFirstChild("Plots") :: Folder
+
+	for i = 1, PlotConfig.PLOT_COUNT do
+		_plots[i] = PlotBuilder.build(i, WorldBuilder.plotCFrame(i), plotsFolder)
+	end
+	Logger:info("Island built with", PlotConfig.PLOT_COUNT, "sanctuaries.")
+
+	-- Assign once data is loaded, so progression can be applied immediately.
+	Registry.DataService.ProfileLoaded:connect(function(player)
+		self:_assign(player)
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		self:_release(player)
+	end)
+end
+
+return PlotService

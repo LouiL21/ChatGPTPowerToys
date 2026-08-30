@@ -96,9 +96,15 @@ end
 
 -- ── Generation ──────────────────────────────────────────────────────────────
 
--- Grants essence + shards for `elapsed` seconds at `efficiency` (1 online, <1 offline).
--- Returns a summary usable for the "welcome back" popup.
-function EssenceService:_grant(player: Player, elapsed: number, efficiency: number)
+--[[
+	Grants essence (and optionally shards) for `elapsed` seconds at `efficiency`.
+
+	`grantShards` is FALSE for the online tick: while you are playing, shards come
+	from physically running over the drops your element nodes eject, which is the
+	active gameplay. It is TRUE for the offline catch-up, so stepping away still
+	pays — you just collect it as a lump on return instead of by hand.
+]]
+function EssenceService:_grant(player: Player, elapsed: number, efficiency: number, grantShards: boolean)
 	if elapsed <= 0 then
 		return { essence = 0, shards = 0 }
 	end
@@ -111,18 +117,21 @@ function EssenceService:_grant(player: Player, elapsed: number, efficiency: numb
 		Registry.QuestService:track(player, "collect_essence", essenceGain)
 	end
 
-	-- Shard accumulation. Tally into a per-element map, then apply as ONE batched
-	-- push (a big offline grant could otherwise be thousands of individual pushes).
-	local acc = (_shardAccum[player.UserId] or 0) + self:getShardRate(player) * elapsed * efficiency
-	local wholeShards = math.floor(acc)
-	_shardAccum[player.UserId] = acc - wholeShards
-	if wholeShards > 0 then
-		local map: { [string]: number } = {}
-		for _ = 1, wholeShards do
-			local id = randomElement()
-			map[id] = (map[id] or 0) + 1
+	local wholeShards = 0
+	if grantShards then
+		-- Tally into a per-element map, then apply as ONE batched push (a long
+		-- offline grant could otherwise be thousands of individual pushes).
+		local acc = (_shardAccum[player.UserId] or 0) + self:getShardRate(player) * elapsed * efficiency
+		wholeShards = math.floor(acc)
+		_shardAccum[player.UserId] = acc - wholeShards
+		if wholeShards > 0 then
+			local map: { [string]: number } = {}
+			for _ = 1, wholeShards do
+				local id = randomElement()
+				map[id] = (map[id] or 0) + 1
+			end
+			Registry.CurrencyService:addShardsMap(player, map)
 		end
-		Registry.CurrencyService:addShardsMap(player, map)
 	end
 
 	return { essence = essenceGain, shards = wholeShards }
@@ -154,7 +163,8 @@ function EssenceService:_applyOffline(player: Player, data)
 	end
 	local cap = Registry.MonetizationService:getOfflineCap(player)
 	elapsed = math.min(elapsed, cap)
-	local summary = self:_grant(player, elapsed, GameConfig.OFFLINE_EFFICIENCY)
+	-- Offline pays shards too, since nobody was there to collect the node drops.
+	local summary = self:_grant(player, elapsed, GameConfig.OFFLINE_EFFICIENCY, true)
 	if summary.essence > 0 then
 		ServerNet.fire(player, "Notify", {
 			text = string.format(
@@ -277,7 +287,9 @@ function EssenceService:Start()
 			task.wait(GameConfig.GENERATION_TICK)
 			for _, player in ipairs(Players:GetPlayers()) do
 				if Registry.DataService:isLoaded(player) then
-					self:_grant(player, GameConfig.GENERATION_TICK, 1.0)
+					-- Online: essence only. Shards are earned by running over the
+					-- drops your element nodes eject (see NodeService).
+					self:_grant(player, GameConfig.GENERATION_TICK, 1.0, false)
 				end
 			end
 		end

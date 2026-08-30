@@ -201,6 +201,17 @@ function FusionService:fuse(player: Player, payload)
 	end
 	Registry.QuestService:grantAchievement(player, "first_fusion")
 
+	-- Fire the physical altar burst so the moment happens in the world, not just
+	-- in the UI.
+	Registry.BeastService:playFusionBurst(player, beast.rarity)
+
+	-- A brand-new beast auto-joins the sanctuary if there's a free habitat slot,
+	-- so a player's first discoveries physically appear without a menu detour.
+	if isNew and #data.display < Registry.PlotService:habitatSlots(player) then
+		table.insert(data.display, beast.id)
+		Registry.BeastService:refresh(player)
+	end
+
 	-- Replicate result (loud, for the discovery popup) + codex.
 	ServerNet.fire(player, "FusionResult", {
 		beastId = beast.id,
