@@ -108,6 +108,89 @@ function Components.button(text: string, color: Color3, props: { [string]: any }
 	return btn
 end
 
+--[[
+	Bottom-nav button: a glyph over a small label. Eight identical word-buttons
+	in a row is what made the old HUD read as a toolbar; a glyph gives each
+	destination its own shape, so players find things by silhouette.
+]]
+function Components.navButton(glyph: string, text: string, color: Color3, props: { [string]: any }?): TextButton
+	local merged: { [string]: any } = {
+		Text = "",
+		BackgroundColor3 = color,
+		AutoButtonColor = false,
+		BorderSizePixel = 0,
+		Size = UDim2.fromOffset(84, 56),
+	}
+	if props then
+		for key, value in pairs(props) do
+			merged[key] = value
+		end
+	end
+
+	local btn = Create("TextButton", merged) :: TextButton
+	Components.corner(Theme.radiusSmall, btn)
+	Components.stroke(btn)
+	Components.gradient(btn, color:Lerp(Color3.new(1, 1, 1), 0.2), color:Lerp(Color3.new(0, 0, 0), 0.22))
+
+	Components.label(glyph, {
+		Size = UDim2.new(1, 0, 0, 24),
+		Position = UDim2.fromOffset(0, 5),
+		TextSize = 20,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Parent = btn,
+	})
+	Components.label(string.upper(text), {
+		Size = UDim2.new(1, 0, 0, 14),
+		Position = UDim2.new(0, 0, 1, -19),
+		Font = Theme.fontBold,
+		TextSize = 10,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Parent = btn,
+	})
+
+	local basePosition = btn.Position
+	btn.MouseButton1Down:Connect(function()
+		btn.Position = basePosition + UDim2.fromOffset(0, 3)
+	end)
+	local function release()
+		btn.Position = basePosition
+	end
+	btn.MouseButton1Up:Connect(release)
+	btn.MouseLeave:Connect(release)
+
+	return btn
+end
+
+--[[
+	Horizontal progress bar. Used wherever a number alone is unreadable — how
+	far through an Altar level you are, how close a quest is to done.
+]]
+function Components.bar(fraction: number, color: Color3, props: { [string]: any }?): Frame
+	local merged: { [string]: any } = {
+		BackgroundColor3 = Theme.bg,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 0, 10),
+	}
+	if props then
+		for key, value in pairs(props) do
+			merged[key] = value
+		end
+	end
+	local track = Create("Frame", merged) :: Frame
+	Components.corner(999, track)
+	Components.stroke(track, 2)
+
+	local fill = Create("Frame", {
+		Size = UDim2.fromScale(math.clamp(fraction, 0, 1), 1),
+		BackgroundColor3 = color,
+		BorderSizePixel = 0,
+		Parent = track,
+	})
+	Components.corner(999, fill)
+	Components.gradient(fill, color:Lerp(Color3.new(1, 1, 1), 0.3), color)
+	return track
+end
+
 -- Small rounded tag, e.g. a rarity chip or an element pill.
 function Components.pill(text: string, color: Color3, props: { [string]: any }?): TextLabel
 	local merged: { [string]: any } = {
@@ -165,19 +248,42 @@ function Components.panel(gui: Instance, title: string, size: UDim2): (Frame, Sc
 	}) :: Frame
 	Components.corner(Theme.radius, frame)
 	Components.stroke(frame)
+	Components.gradient(frame, Theme.panel, Theme.bg)
 
 	local header = Create("Frame", {
 		Name = "Header",
-		Size = UDim2.new(1, 0, 0, 46),
+		Size = UDim2.new(1, 0, 0, 52),
 		BackgroundColor3 = Theme.panel,
 		BorderSizePixel = 0,
 		ZIndex = 11,
 		Parent = frame,
 	})
 	Components.corner(Theme.radius, header)
+	Components.gradient(header, Theme.panelLight, Theme.panel)
+	-- Square off the header's bottom corners so it reads as a bar, not a card
+	-- floating inside another card.
+	Create("Frame", {
+		Size = UDim2.new(1, 0, 0, Theme.radius),
+		Position = UDim2.new(0, 0, 1, -Theme.radius),
+		BackgroundColor3 = Theme.panel,
+		BorderSizePixel = 0,
+		ZIndex = 11,
+		Parent = header,
+	})
+	-- Accent rule under the title: one bright line does more for perceived
+	-- polish than any amount of extra chrome.
+	local rule = Create("Frame", {
+		Size = UDim2.new(1, 0, 0, 3),
+		Position = UDim2.new(0, 0, 1, -3),
+		BackgroundColor3 = Theme.accentLight,
+		BorderSizePixel = 0,
+		ZIndex = 12,
+		Parent = header,
+	})
+	Components.gradient(rule, Theme.accentLight, Theme.accent)
 
 	Components.label(title, {
-		Size = UDim2.new(1, -60, 1, 0),
+		Size = UDim2.new(1, -60, 1, -3),
 		Position = UDim2.fromOffset(18, 0),
 		Font = Theme.fontDisplay,
 		TextSize = 22,
@@ -185,9 +291,9 @@ function Components.panel(gui: Instance, title: string, size: UDim2): (Frame, Sc
 		Parent = header,
 	})
 
-	local close = Components.button("X", Theme.red, {
-		Size = UDim2.fromOffset(34, 30),
-		Position = UDim2.new(1, -44, 0, 8),
+	local close = Components.button("✕", Theme.red, {
+		Size = UDim2.fromOffset(36, 32),
+		Position = UDim2.new(1, -46, 0, 9),
 		TextSize = 16,
 		ZIndex = 12,
 		Parent = header,
@@ -198,8 +304,8 @@ function Components.panel(gui: Instance, title: string, size: UDim2): (Frame, Sc
 
 	local body = Create("ScrollingFrame", {
 		Name = "Body",
-		Size = UDim2.new(1, -20, 1, -60),
-		Position = UDim2.fromOffset(10, 54),
+		Size = UDim2.new(1, -24, 1, -68),
+		Position = UDim2.fromOffset(12, 60),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 6,

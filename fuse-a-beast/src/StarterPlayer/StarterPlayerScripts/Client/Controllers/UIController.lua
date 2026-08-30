@@ -144,21 +144,22 @@ local function buildNav(gui: Instance)
 	})
 
 	local specs = {
-		{ text = "Summon", color = Theme.accent, action = function() UIController.open("Summon") end },
-		{ text = "Chamber", color = Theme.rarity.Mythic, action = function() UIController.open("Chamber") end },
-		{ text = "Beasts", color = Theme.panelLight, action = function() UIController.open("Beastdex") end },
-		{ text = "Pets", color = Theme.panelLight, action = function() UIController.open("Pets") end },
-		{ text = "Arena", color = Theme.red, action = function() UIController.open("Arena") end },
-		{ text = "Quests", color = Theme.panelLight, action = function() UIController.open("Quests") end },
-		{ text = "Shop", color = Theme.green, action = function() UIController.open("Shop") end },
+		{ glyph = "🔮", text = "Summon", color = Theme.accent, panel = "Summon" },
+		{ glyph = "⚗️", text = "Chamber", color = Theme.rarity.Mythic, panel = "Chamber" },
+		-- The Altar entry was lost when the HUD was rebuilt, which left the whole
+		-- upgrade and Ascension ladder unreachable. It lives here permanently now.
+		{ glyph = "🏛️", text = "Altar", color = Theme.gold, panel = "Sanctuary" },
+		{ glyph = "📖", text = "Beasts", color = Theme.panelLight, panel = "Beastdex" },
+		{ glyph = "🐾", text = "Pets", color = Theme.panelLight, panel = "Pets" },
+		{ glyph = "⚔️", text = "Arena", color = Theme.red, panel = "Arena" },
+		{ glyph = "📋", text = "Quests", color = Theme.panelLight, panel = "Quests" },
+		{ glyph = "🛒", text = "Shop", color = Theme.green, panel = "Shop" },
 	}
 	for _, spec in ipairs(specs) do
-		local btn = UI.button(spec.text, spec.color, {
-			Size = UDim2.fromOffset(104, 46),
-			TextSize = 15,
-			Parent = nav,
-		})
-		btn.MouseButton1Click:Connect(spec.action)
+		local btn = UI.navButton(spec.glyph, spec.text, spec.color, { Parent = nav })
+		btn.MouseButton1Click:Connect(function()
+			UIController.open(spec.panel)
+		end)
 	end
 end
 
@@ -276,7 +277,7 @@ function UIController:_renderChamber()
 	local hasChamber = ((data.plot or {}).purchasedPads or {})["fusion_chamber"] == true
 
 	if not hasChamber then
-		UI.label("Build the Fusion Chamber on your plot to combine beasts.\nIt's the second buy-pad on your sanctuary.", {
+		UI.label("Build the Fusion Chamber on your plot to combine beasts.\nIt's the FIRST buy-pad at your sanctuary entrance.", {
 			Size = UDim2.new(1, -8, 0, 60),
 			TextSize = 14,
 			TextColor3 = Theme.goldLight,
@@ -368,14 +369,45 @@ function UIController:_renderChamber()
 		Parent = body,
 	})
 
-	local fuse = UI.button("FUSE", (a and b) and Theme.rarity.Mythic or Theme.panelLight, {
+	-- The price was previously computed only on the server, so a player had no
+	-- idea what a fusion would cost until it silently failed. Mirror the server's
+	-- formula and put the number on the button itself.
+	local essence = (data.currencies or {}).essence or 0
+	local cost = 0
+	if a and b then
+		local tier = math.max(VariantConfig.index(a.variant), VariantConfig.index(b.variant))
+		cost = math.floor(GameConfig.CHAMBER_BASE_COST * GameConfig.CHAMBER_COST_GROWTH ^ (tier - 1))
+	end
+	local affordable = cost > 0 and essence >= cost
+
+	if a and b then
+		UI.label(
+			affordable and string.format("Cost  %s essence   (you have %s)", Format.abbreviate(cost), Format.abbreviate(essence))
+				or string.format("Cost  %s essence  —  you have %s", Format.abbreviate(cost), Format.abbreviate(essence)),
+			{
+				Size = UDim2.new(1, -8, 0, 20),
+				TextSize = 13,
+				Font = Theme.fontBold,
+				TextColor3 = affordable and Theme.goldLight or Theme.red,
+				TextXAlignment = Enum.TextXAlignment.Center,
+				LayoutOrder = 3,
+				Parent = body,
+			}
+		)
+	end
+
+	local fuseText = "SELECT TWO BEASTS"
+	if a and b then
+		fuseText = affordable and string.format("FUSE  ·  %s", Format.abbreviate(cost)) or "NOT ENOUGH ESSENCE"
+	end
+	local fuse = UI.button(fuseText, affordable and Theme.rarity.Mythic or Theme.panelLight, {
 		Size = UDim2.new(1, -8, 0, 50),
 		TextSize = 20,
-		LayoutOrder = 3,
+		LayoutOrder = 4,
 		Parent = body,
 	})
 	fuse.MouseButton1Click:Connect(function()
-		if a and b then
+		if a and b and affordable then
 			Remotes.event("ChamberFuse"):FireServer({ a = a, b = b })
 			chamberSlots = {}
 		end
@@ -386,7 +418,7 @@ function UIController:_renderChamber()
 		Font = Theme.fontBold,
 		TextSize = 12,
 		TextColor3 = Theme.accentLight,
-		LayoutOrder = 4,
+		LayoutOrder = 5,
 		Parent = body,
 	})
 
@@ -395,7 +427,7 @@ function UIController:_renderChamber()
 			Size = UDim2.new(1, -8, 0, 46),
 			BackgroundColor3 = Theme.panel,
 			BorderSizePixel = 0,
-			LayoutOrder = 4 + index,
+			LayoutOrder = 5 + index,
 			Parent = body,
 		}, false)
 		local beast = BeastConfig.ById[item.beastId]
@@ -436,6 +468,146 @@ function UIController:_renderChamber()
 			end
 		end)
 	end
+end
+
+-- ── Sanctuary (Altar level + Ascension) ───────────────────────────────────
+
+function UIController:_renderSanctuary()
+	local body = bodies.Sanctuary
+	UI.clear(body)
+	local data = ClientState.data
+	local altarLevel = (data.altar or {}).level or 1
+	local essence = (data.currencies or {}).essence or 0
+	local ascension = data.ascension or { count = 0, multiplier = 1 }
+
+	local atMax = altarLevel >= GameConfig.MAX_ALTAR_LEVEL
+	local upgradeCost = math.floor(
+		GameConfig.ALTAR_UPGRADE_BASE_COST * GameConfig.ALTAR_UPGRADE_COST_GROWTH ^ (altarLevel - 1)
+	)
+	local canAfford = essence >= upgradeCost
+
+	-- Headline card: what the Altar is doing for you right now.
+	local card = UI.surface({
+		Size = UDim2.new(1, -8, 0, 108),
+		BackgroundColor3 = Theme.panel,
+		BorderSizePixel = 0,
+		LayoutOrder = 1,
+		Parent = body,
+	}, false)
+	UI.label(string.format("Altar  ·  Level %d", altarLevel), {
+		Size = UDim2.new(1, -24, 0, 26),
+		Position = UDim2.fromOffset(14, 10),
+		Font = Theme.fontDisplay,
+		TextSize = 20,
+		TextColor3 = Theme.goldLight,
+		Parent = card,
+	})
+	UI.label(string.format("%s essence / sec  ·  %s shards / sec", Format.abbreviate(data.ratePerSecond or 0),
+		Format.abbreviate(GameConfig.SHARD_BASE_PER_SECOND * GameConfig.SHARD_ALTAR_GROWTH ^ (altarLevel - 1))), {
+		Size = UDim2.new(1, -24, 0, 18),
+		Position = UDim2.fromOffset(14, 38),
+		TextSize = 12,
+		TextColor3 = Theme.textMuted,
+		Parent = card,
+	})
+	UI.label(string.format("Each level is +%d%% essence and +%d%% shards, forever.",
+		math.floor((GameConfig.ALTAR_RATE_GROWTH - 1) * 100),
+		math.floor((GameConfig.SHARD_ALTAR_GROWTH - 1) * 100)), {
+		Size = UDim2.new(1, -24, 0, 18),
+		Position = UDim2.fromOffset(14, 58),
+		TextSize = 12,
+		TextColor3 = Theme.accentLight,
+		Parent = card,
+	})
+	UI.bar(atMax and 1 or math.min(1, essence / math.max(1, upgradeCost)), Theme.gold, {
+		Size = UDim2.new(1, -28, 0, 10),
+		Position = UDim2.fromOffset(14, 84),
+		Parent = card,
+	})
+
+	local upgrade = UI.button(
+		atMax and "MAX LEVEL" or string.format("UPGRADE  ·  %s essence", Format.abbreviate(upgradeCost)),
+		(not atMax and canAfford) and Theme.gold or Theme.panelLight,
+		{
+			Size = UDim2.new(1, -8, 0, 54),
+			TextSize = 18,
+			LayoutOrder = 2,
+			Parent = body,
+		}
+	)
+	if not atMax then
+		upgrade.MouseButton1Click:Connect(function()
+			Remotes.event("UpgradeAltar"):FireServer()
+		end)
+	end
+
+	-- Manual collect: a small active-play bonus, and the reason to be near the
+	-- Altar rather than idling in a menu.
+	local collect = UI.button("TAP TO CHANNEL  +", Theme.accent, {
+		Size = UDim2.new(1, -8, 0, 44),
+		TextSize = 15,
+		LayoutOrder = 3,
+		Parent = body,
+	})
+	collect.MouseButton1Click:Connect(function()
+		Remotes.event("Collect"):FireServer()
+	end)
+
+	-- Ascension.
+	local requirement = math.floor(
+		GameConfig.ASCENSION_ALTAR_REQUIREMENT * GameConfig.ASCENSION_COST_GROWTH ^ (ascension.count or 0)
+	)
+	local canAscend = altarLevel >= requirement
+
+	UI.label("ASCENSION", {
+		Size = UDim2.new(1, -8, 0, 22),
+		Font = Theme.fontBold,
+		TextSize = 12,
+		TextColor3 = Theme.rarity.Mythic,
+		LayoutOrder = 4,
+		Parent = body,
+	})
+	UI.label(string.format(
+		"Reset your Altar, essence and shards — keep every beast — for a permanent +%d%% essence bonus.\nCurrent bonus: +%d%%  ·  Ascensions: %d",
+		math.floor(GameConfig.ASCENSION_MULT_PER_LEVEL * 100),
+		math.floor(((ascension.multiplier or 1) - 1) * 100),
+		ascension.count or 0
+	), {
+		Size = UDim2.new(1, -8, 0, 52),
+		TextSize = 12,
+		TextColor3 = Theme.textMuted,
+		TextWrapped = true,
+		LayoutOrder = 5,
+		Parent = body,
+	})
+
+	local ascend = UI.button(
+		canAscend and "ASCEND" or string.format("Needs Altar level %d", requirement),
+		canAscend and Theme.rarity.Mythic or Theme.panelLight,
+		{
+			Size = UDim2.new(1, -8, 0, 50),
+			TextSize = 18,
+			LayoutOrder = 6,
+			Parent = body,
+		}
+	)
+	if canAscend then
+		ascend.MouseButton1Click:Connect(function()
+			Remotes.event("Ascend"):FireServer()
+		end)
+	end
+
+	-- Sanctuary capacity, so "why can't I display this beast" has an answer.
+	local slots = data.habitatSlots or PlotConfig.BASE_HABITAT_SLOTS
+	UI.label(string.format("Sanctuary space: %d / %d beasts — buy Habitat pads on your plot for more.",
+		#(data.display or {}), slots), {
+		Size = UDim2.new(1, -8, 0, 34),
+		TextSize = 12,
+		TextColor3 = Theme.cyan,
+		TextWrapped = true,
+		LayoutOrder = 7,
+		Parent = body,
+	})
 end
 
 -- ── Beastdex ──────────────────────────────────────────────────────────────
@@ -900,6 +1072,7 @@ function UIController.build()
 	local panelSpecs = {
 		{ name = "Summon", title = "Summoning Altar", size = UDim2.fromOffset(430, 430) },
 		{ name = "Chamber", title = "Fusion Chamber", size = UDim2.fromOffset(470, 520) },
+		{ name = "Sanctuary", title = "Summoning Altar", size = UDim2.fromOffset(450, 520) },
 		{ name = "Beastdex", title = "Beastdex", size = UDim2.fromOffset(450, 520) },
 		{ name = "Pets", title = "Your Pets", size = UDim2.fromOffset(450, 480) },
 		{ name = "Arena", title = "The Arena", size = UDim2.fromOffset(450, 520) },
