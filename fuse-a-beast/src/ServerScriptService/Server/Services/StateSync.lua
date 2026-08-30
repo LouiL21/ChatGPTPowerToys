@@ -43,6 +43,17 @@ function StateSync:Start()
 			end
 		end)
 	end)
+
+	-- The player closed the How to Play card. This is a one-way latch: it can be
+	-- set but never cleared from the client, so a hostile client can at worst
+	-- skip its own tutorial.
+	ServerNet.onEvent("TutorialSeen", function(player)
+		local data = Registry.DataService:get(player)
+		if data and not data.tutorialSeen then
+			data.tutorialSeen = true
+			self:push(player, { tutorialSeen = true })
+		end
+	end)
 end
 
 -- Full authoritative snapshot for the client UI.
@@ -73,6 +84,7 @@ function StateSync:buildFull(player: Player)
 		stats = data.stats,
 		ratePerSecond = Registry.EssenceService:getRate(player),
 		boosts = Registry.MonetizationService:getActiveBoosts(player),
+		tutorialSeen = data.tutorialSeen == true,
 	}
 end
 

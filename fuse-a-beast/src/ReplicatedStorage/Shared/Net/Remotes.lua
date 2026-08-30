@@ -29,6 +29,7 @@ Remotes.ClientEvents = {
 	"RequestTrade",
 	"RespondTrade",
 	"VisitPlayer",
+	"TutorialSeen", -- player dismissed the How to Play card
 	"PromptPurchase", -- client asks server to prompt a product/gamepass purchase
 }
 

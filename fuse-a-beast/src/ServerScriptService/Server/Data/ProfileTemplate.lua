@@ -99,6 +99,11 @@ local ProfileTemplate = {
 		lowGraphics = false,
 	},
 
+	-- False until the player dismisses the How to Play card. Server-side rather
+	-- than client-side so it follows them to any device, and so it can never be
+	-- re-triggered by a client that "forgot".
+	tutorialSeen = false,
+
 	lastSeen = 0, -- os.time() at last save/leave; drives offline generation
 }
 

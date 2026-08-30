@@ -5,7 +5,10 @@
 	initial authoritative snapshot.
 
 	Onboarding is the gameplay: you land on your sanctuary with shards already
-	dropping, and the Altar is a few steps away. No tutorial gate.
+	dropping, and the Altar is a few steps away. The one exception is a single
+	How to Play card on a player's very first join — the Fusion Chamber is a pad
+	on the floor that nobody would guess combines two beasts, and losing that
+	mechanic loses the game. It closes on one tap and never returns.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,15 +21,25 @@ local EssenceController = require(script.Controllers.EssenceController)
 local NotificationController = require(script.Controllers.NotificationController)
 local FusionController = require(script.Controllers.FusionController)
 local BattleController = require(script.Controllers.BattleController)
+local HowToController = require(script.Controllers.HowToController)
 
 UIController.build()
 NotificationController.init()
 FusionController.init()
 BattleController.init()
+HowToController.init()
 EssenceController.init()
+
+UIController.setHelpAction(function()
+	HowToController.open()
+end)
 
 ClientState.Changed:connect(function()
 	UIController.refresh()
+	-- Opens once, the first time we learn this player has never seen it.
+	HowToController.consider(ClientState.data, function()
+		Remotes.event("TutorialSeen"):FireServer()
+	end)
 end)
 
 -- Server → client streams.

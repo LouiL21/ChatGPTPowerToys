@@ -112,6 +112,21 @@ local function buildHud(gui: Instance)
 	stat("Gems", "◆", Theme.cyan, 92)
 	stat("Rate", "⟳", Theme.accentLight, 110)
 
+	-- Reopen How to Play. Tucked beside the resource bar rather than in the nav:
+	-- it is a one-off read, not a destination, and the nav is already full.
+	local help = UI.button("?", Theme.panelLight, {
+		Name = "Help",
+		Size = UDim2.fromOffset(38, 38),
+		Position = UDim2.new(0.5, 210, 0, 18),
+		TextSize = 20,
+		Parent = gui,
+	})
+	help.MouseButton1Click:Connect(function()
+		if refs.helpAction then
+			refs.helpAction()
+		end
+	end)
+
 	-- Active pet card, bottom-left: your fighter, always visible.
 	local petCard = UI.surface({
 		Name = "PetCard",
@@ -135,6 +150,12 @@ local function buildHud(gui: Instance)
 		TextColor3 = Theme.textMuted,
 		Parent = petCard,
 	})
+end
+
+-- The client bootstrap owns HowToController, so it hands the "?" action in here
+-- rather than UIController reaching across into another controller.
+function UIController.setHelpAction(action: () -> ())
+	refs.helpAction = action
 end
 
 local function buildNav(gui: Instance)

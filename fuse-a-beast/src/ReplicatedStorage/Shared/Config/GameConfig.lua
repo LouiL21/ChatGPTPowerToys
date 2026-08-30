@@ -104,6 +104,7 @@ GameConfig.REMOTE_RATE_LIMITS = { -- max calls per window (seconds)
 	Ascend = { max = 2, window = 5 },
 	RequestTrade = { max = 5, window = 5 },
 	Collect = { max = 20, window = 1 },
+	TutorialSeen = { max = 2, window = 5 },
 }
 
 -- ── Rarity table (weights are BEFORE luck/recipe modifiers) ───────────────
