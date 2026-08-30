@@ -371,9 +371,13 @@ function UIController:_renderChamber()
 			BeastInventory.stats(a.beastId, a.variant).power,
 			BeastInventory.stats(b.beastId, b.variant).power
 		)
+		local bands = GameConfig.CHAMBER_OUTCOME
 		previewText = string.format(
-			"Hybrid fusion → a new beast from their combined elements.\nGuaranteed at least %s power and the matching HP.",
-			Format.abbreviate(best)
+			"Hybrid fusion → never below %s power.\n%d%% same tier  ·  %d%% one tier up  ·  %d%% two tiers up",
+			Format.abbreviate(best),
+			math.floor(bands.same * 100 + 0.5),
+			math.floor(bands.slightly * 100 + 0.5),
+			math.floor(bands.better * 100 + 0.5)
 		)
 		previewColor = Theme.rarity.Mythic
 	end

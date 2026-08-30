@@ -138,10 +138,44 @@ end
 	If even that cannot reach the floor, the fusion is refused and refunded
 	rather than handing back a downgrade.
 
+	HOW MUCH better is decided up front by GameConfig.CHAMBER_OUTCOME — by
+	default 70% hold the line, 20% jump one rarity tier, 10% jump two. The band
+	is chosen before the roll so the Chamber can ask for an exact rarity rather
+	than "this or better" — otherwise the weighted rarity table would drift the
+	real odds away from the advertised ones.
+
 	Power and health share a multiplier (see BeastInventory.stats), so comparing
 	power alone guarantees both.
 ]]
 local MAX_VARIANT_COMPENSATION = 1
+
+--[[
+	Picks how many rarity tiers above the floor this fusion aims for.
+	Chamber luck moves weight out of `same` into the upgrade bands, clamped so
+	an upgrade never becomes the likely outcome.
+]]
+function FusionChamberService:_outcomeStep(player: Player): number
+	local bands = GameConfig.CHAMBER_OUTCOME
+	local luck = Registry.MonetizationService:getFusionLuck(player)
+
+	local slightly = bands.slightly * luck
+	local better = bands.better * luck
+	local total = slightly + better
+	if total > GameConfig.CHAMBER_MAX_UPGRADE_CHANCE then
+		-- Scale both down together so their ratio to each other is preserved.
+		local scale = GameConfig.CHAMBER_MAX_UPGRADE_CHANCE / total
+		slightly *= scale
+		better *= scale
+	end
+
+	local roll = math.random()
+	if roll < better then
+		return 2
+	elseif roll < better + slightly then
+		return 1
+	end
+	return 0
+end
 
 function FusionChamberService:_hybridFuse(player: Player, data, a, b)
 	local beastA = BeastConfig.ById[a.beastId]
@@ -162,16 +196,31 @@ function FusionChamberService:_hybridFuse(player: Player, data, a, b)
 	local floorPower =
 		math.max(BeastInventory.stats(a.beastId, a.variant).power, BeastInventory.stats(b.beastId, b.variant).power)
 
-	-- The better parent's rarity is the floor for the roll.
+	-- The better parent's rarity is the floor; the band says how far above it to
+	-- aim.
 	local rarityIndexOf = function(rarity: string): number
 		return table.find(GameConfig.RARITY_ORDER, rarity) or 1
 	end
-	local floorRarity = rarityIndexOf(beastA.rarity) >= rarityIndexOf(beastB.rarity) and beastA.rarity or beastB.rarity
+	local floorIndex = math.max(rarityIndexOf(beastA.rarity), rarityIndexOf(beastB.rarity))
+	local step = self:_outcomeStep(player)
+	local targetIndex = math.min(#GameConfig.RARITY_ORDER, floorIndex + step)
 
-	local result = Registry.FusionService:rollFromElements(player, elements, floorRarity)
+	-- Walk down from the target to the floor, taking the first rarity that has
+	-- anything eligible. A pair whose elements have no Mythic, say, still gets
+	-- its upgrade band honoured as far as the content allows.
+	local eligible = Registry.FusionService:eligibleByElements(elements)
+	local result
+	for index = targetIndex, floorIndex, -1 do
+		local candidates = eligible[GameConfig.RARITY_ORDER[index]]
+		if candidates and #candidates > 0 then
+			result = candidates[math.random(1, #candidates)]
+			break
+		end
+	end
+
 	if not result then
-		-- Nothing that rare exists for these elements; take the best available and
-		-- make up the difference in variant instead.
+		-- Nothing at or above the floor exists for these elements; take the best
+		-- available and make up the difference in variant instead.
 		result = Registry.FusionService:rollFromElements(player, elements)
 	end
 	if not result then

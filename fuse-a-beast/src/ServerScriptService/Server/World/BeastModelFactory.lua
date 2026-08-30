@@ -738,7 +738,9 @@ end
 	plan's extras: crests, floating plates, spikes and shoulder armour.
 ]]
 function BeastModelFactory.createBoss(boss, tier: number): Model?
-	local scale = 2.4 + tier * 0.45
+	-- Grows across the whole ladder without the late rungs becoming absurd: the
+	-- first boss is roughly twice a Mythic beast, the tenth about five times.
+	local scale = 2.2 + tier * 0.28
 	local rng = Random.new(seedFor(boss.id))
 
 	local element = elementColor(boss.element)

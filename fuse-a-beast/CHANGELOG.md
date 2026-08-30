@@ -4,6 +4,24 @@ All notable changes to Fuse a Beast are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.5] — 2026-08-30
+
+### Added
+- **Ten Arena bosses**, up from five: Thornmother, Glacier Titan, Emberwing
+  Tyrant, Duneshaper and The Unmade. All six elements appear and no two
+  consecutive rungs share a body plan. The top rung is pitched just inside what
+  a maxed roster can beat — The Unmade takes eight clean hits to drop while
+  needing eight to drop you, so it comes down to crits and element advantage.
+
+### Changed
+- **Hybrid fusion outcomes are now explicit bands**: 70% hold the better
+  parent's rarity, 20% jump one tier, 10% jump two. The band is picked *before*
+  the roll so the Chamber asks for an exact rarity — otherwise the weighted
+  rarity table drifts the real odds away from the advertised ones. Chamber luck
+  shifts weight into the upgrade bands, capped so an upgrade is never the likely
+  outcome. The preview shows all three percentages.
+- Boss model scale grows more gently so the tenth rung isn't absurd.
+
 ## [0.3.4] — 2026-08-30
 
 ### Changed

@@ -44,16 +44,33 @@ CombatConfig.Advantage = {
 }
 
 -- ── Boss ladder (PvE, always available so solo players can battle) ────────
--- `form` is the body plan BeastModelFactory builds the boss from. Hand-assigned
--- rather than derived, because the whole point of a five-boss ladder is that
--- each one is a different thing to look at: a slab golem, then a coiling
--- serpent, then a brawler, then a raptor, then something barely there.
+--[[
+	The boss ladder. `form` is the body plan BeastModelFactory builds each boss
+	from, hand-assigned rather than derived, because the point of a ladder is
+	that every rung is a different thing to look at — a slab golem, a coiling
+	serpent, a brawler, a raptor, something barely there.
+
+	Tuning: the top rung is pitched just inside what a maxed roster can beat. A
+	Secret Void pet is 20,800 power / 104,000 health, so The Unmade (13,000 /
+	150,000) takes eight clean hits to drop while it needs eight to drop you —
+	the player swings first, so it comes down to crits and element advantage.
+	Anything harder would be unbeatable rather than hard, since combat power is
+	deliberately not purchasable.
+
+	All six elements appear, and no two consecutive rungs share a body plan, so
+	the ladder never feels like the same fight twice in a row.
+]]
 CombatConfig.Bosses = {
 	{ id = "clay_sentinel", name = "Clay Sentinel", form = "golem", power = 26, health = 260, element = "Earth", reward = { gems = 8, essence = 1500 } },
 	{ id = "tide_warden", name = "Tide Warden", form = "serpent", power = 70, health = 620, element = "Water", reward = { gems = 18, essence = 9000 } },
 	{ id = "ashen_maw", name = "Ashen Maw", form = "brute", power = 160, health = 1500, element = "Fire", reward = { gems = 40, essence = 60000 } },
 	{ id = "storm_herald", name = "Storm Herald", form = "avian", power = 380, health = 3400, element = "Air", reward = { gems = 90, essence = 400000 } },
 	{ id = "the_hollow", name = "The Hollow", form = "wisp", power = 900, health = 8000, element = "Void", reward = { gems = 220, essence = 3000000 } },
+	{ id = "thornmother", name = "Thornmother", form = "quadruped", power = 1900, health = 17000, element = "Nature", reward = { gems = 500, essence = 20000000 } },
+	{ id = "glacier_titan", name = "Glacier Titan", form = "golem", power = 3800, health = 34000, element = "Water", reward = { gems = 1100, essence = 140000000 } },
+	{ id = "emberwing_tyrant", name = "Emberwing Tyrant", form = "avian", power = 6800, health = 62000, element = "Fire", reward = { gems = 2400, essence = 900000000 } },
+	{ id = "duneshaper", name = "Duneshaper", form = "serpent", power = 10000, health = 100000, element = "Earth", reward = { gems = 5200, essence = 6000000000 } },
+	{ id = "the_unmade", name = "The Unmade", form = "brute", power = 13000, health = 150000, element = "Void", reward = { gems = 12000, essence = 40000000000 } },
 }
 
 CombatConfig.BOSS_COOLDOWN = 60 -- seconds between boss attempts

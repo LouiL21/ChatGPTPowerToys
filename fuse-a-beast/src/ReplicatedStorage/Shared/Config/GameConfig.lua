@@ -46,6 +46,25 @@ GameConfig.FUSION_BASE_COOLDOWN = 2.0 -- seconds between manual fusions (anti-sp
 -- parent's variant so late-game fusions stay a real decision.
 GameConfig.CHAMBER_BASE_COST = 500
 GameConfig.CHAMBER_COST_GROWTH = 4.2
+
+--[[
+	Hybrid fusion outcome bands.
+
+	The Chamber never returns a downgrade, so these decide how much BETTER the
+	offspring is: how many rarity tiers it lands above the better parent's.
+	Most fusions hold the line, which is what keeps the rare jump exciting —
+	if every fusion were an upgrade there would be nothing to chase.
+
+	Chamber luck (the Chamber Mastery pass, fusion-luck boosts) shifts weight
+	out of `same` and into the two upgrade bands, clamped so an upgrade is never
+	more likely than not.
+]]
+GameConfig.CHAMBER_OUTCOME = {
+	same = 0.70, -- matches the better parent's rarity
+	slightly = 0.20, -- one rarity tier up
+	better = 0.10, -- two rarity tiers up
+}
+GameConfig.CHAMBER_MAX_UPGRADE_CHANCE = 0.6 -- ceiling on slightly + better after luck
 GameConfig.NEW_DISCOVERY_GEM_REWARD = { -- gems granted the FIRST time a rarity is discovered
 	Common = 1,
 	Uncommon = 2,

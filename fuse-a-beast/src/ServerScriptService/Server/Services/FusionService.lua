@@ -130,6 +130,17 @@ function FusionService:rollFromElements(player: Player, elements: { string }, mi
 	return candidates[math.random(1, #candidates)]
 end
 
+--[[
+	Every eligible beast for an element set, grouped by rarity.
+
+	The Chamber needs to pick at an EXACT rarity rather than "this or better",
+	because its outcome bands decide up front whether a fusion holds the line or
+	jumps a tier. Exposed here so eligibility and event gating stay in one place.
+]]
+function FusionService:eligibleByElements(elements: { string })
+	return self:_eligibleByRarity(distinctSet(elements))
+end
+
 -- ── The Altar: summon a beast from shards ────────────────────────────────
 function FusionService:summon(player: Player, payload)
 	local data = Registry.DataService:get(player)
