@@ -82,14 +82,27 @@ function Build.disc(radius: number, height: number, position: Vector3, color: Co
 	return part
 end
 
--- Billboard label used for signage, buy-pad prices and beast nameplates.
-function Build.label(adornee: BasePart, text: string, size: Vector2, offsetY: number): BillboardGui
+--[[
+	Billboard label used for signage, buy-pad prices and beast nameplates.
+
+	`maxDistance` matters more than it looks: every label on every plot used to
+	render out to 220 studs, so standing anywhere on the island stacked dozens of
+	overlapping names into unreadable soup. Labels should fade out well before
+	the thing they name stops being your business.
+]]
+function Build.label(
+	adornee: BasePart,
+	text: string,
+	size: Vector2,
+	offsetY: number,
+	maxDistance: number?
+): BillboardGui
 	local billboard = Instance.new("BillboardGui")
 	billboard.Adornee = adornee
 	billboard.Size = UDim2.fromOffset(size.X, size.Y)
 	billboard.StudsOffsetWorldSpace = Vector3.new(0, offsetY, 0)
 	billboard.AlwaysOnTop = false
-	billboard.MaxDistance = 220
+	billboard.MaxDistance = maxDistance or 110
 	billboard.Parent = adornee
 
 	local label = Instance.new("TextLabel")

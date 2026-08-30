@@ -712,7 +712,7 @@ function BeastModelFactory.create(beastId: string, level: number?, variantId: st
 	end
 
 	-- Nameplate: variant-prefixed name in the variant/rarity colour.
-	local plate = Build.label(root, VariantConfig.label(variant.id, beast.name), Vector2.new(240, 52), height + 2.4)
+	local plate = Build.label(root, VariantConfig.label(variant.id, beast.name), Vector2.new(240, 52), height + 2.4, 85)
 	local plateText = plate:FindFirstChild("Text") :: TextLabel
 	plateText.TextColor3 = accent
 	plate.MaxDistance = 140

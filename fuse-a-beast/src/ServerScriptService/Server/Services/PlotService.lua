@@ -61,6 +61,40 @@ function PlotService:isOnPlot(player: Player, position: Vector3): boolean
 end
 
 -- Apply saved progression to the plot's geometry.
+--[[
+	Paints one buy-pad for its state. Single source of truth for pad appearance
+	so the build-time pass and the affordability sweep can never disagree.
+
+	The tile carries the state colour and the thin frame carries the emission —
+	keeping neon off the large face is what stops a plot full of pads reading as
+	a field of white squares.
+]]
+local PAD_TILE = {
+	purchased = Color3.fromRGB(46, 96, 56),
+	affordable = PlotConfig.COLORS.affordable,
+	locked = PlotConfig.COLORS.locked,
+}
+local PAD_FRAME = {
+	purchased = Color3.fromRGB(72, 168, 88),
+	affordable = Color3.fromRGB(214, 156, 52),
+	locked = Color3.fromRGB(96, 76, 158),
+}
+local PAD_TEXT = {
+	purchased = Color3.fromRGB(160, 240, 175),
+	affordable = Color3.fromRGB(255, 224, 150),
+	locked = Color3.fromRGB(190, 184, 216),
+}
+
+function PlotService:_paintPad(pad, spec, purchased: boolean, affordable: boolean)
+	local state = purchased and "purchased" or (affordable and "affordable" or "locked")
+	pad.pad.Color = PAD_TILE[state]
+	pad.glow.Color = PAD_FRAME[state]
+	pad.glow.Transparency = purchased and 0.45 or 0
+	pad.label.TextColor3 = PAD_TEXT[state]
+	pad.label.Text = purchased and (spec.label .. "\n✔ OWNED")
+		or string.format("%s\n%s essence", spec.label, Format.abbreviate(spec.cost))
+end
+
 function PlotService:applyProgression(player: Player)
 	local handle = self:getHandle(player)
 	local data = Registry.DataService:get(player)
@@ -91,15 +125,8 @@ function PlotService:applyProgression(player: Player)
 		local pad = handle.pads[spec.id]
 		if pad then
 			local purchased = data.plot.purchasedPads[spec.id] == true
-			local affordable = not purchased and essence >= spec.cost
 			pad.purchased = purchased
-			pad.pad.Color = purchased and Color3.fromRGB(77, 191, 89)
-				or (affordable and PlotConfig.COLORS.affordable or PlotConfig.COLORS.locked)
-			pad.pad.Transparency = purchased and 0.6 or (affordable and 0.1 or 0.35)
-			pad.label.Text = purchased and (spec.label .. "\n✔ OWNED")
-				or string.format("%s\n%s essence", spec.label, Format.abbreviate(spec.cost))
-			pad.label.TextColor3 = purchased and Color3.fromRGB(150, 245, 165)
-				or (affordable and Color3.fromRGB(255, 226, 150) or Color3.fromRGB(196, 190, 220))
+			self:_paintPad(pad, spec, purchased, not purchased and essence >= spec.cost)
 		end
 	end
 
@@ -280,11 +307,7 @@ function PlotService:Start()
 					for _, spec in ipairs(PlotConfig.BuyPads) do
 						local pad = handle.pads[spec.id]
 						if pad and not pad.purchased then
-							local affordable = essence >= spec.cost
-							pad.pad.Color = affordable and PlotConfig.COLORS.affordable or PlotConfig.COLORS.locked
-							pad.pad.Transparency = affordable and 0.1 or 0.35
-							pad.label.TextColor3 = affordable and Color3.fromRGB(255, 226, 150)
-								or Color3.fromRGB(196, 190, 220)
+							self:_paintPad(pad, spec, false, essence >= spec.cost)
 						end
 					end
 				end

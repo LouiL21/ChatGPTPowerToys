@@ -30,7 +30,8 @@ export type NodeHandle = {
 
 export type PadHandle = {
 	id: string,
-	pad: BasePart,
+	pad: BasePart, -- the dark walkable tile; also the Touched target
+	glow: BasePart, -- the thin neon frame around it
 	label: TextLabel,
 	purchased: boolean,
 }
@@ -102,24 +103,28 @@ local function buildGround(model: Model, origin: CFrame)
 		})
 	end
 
-	-- Glowing capstones along the wall line. A flat slab reads as unfinished; a
-	-- repeated lit detail reads as built, and it costs nine parts.
+	-- Capstones along the wall line. A flat slab reads as unfinished; a repeated
+	-- detail reads as built.
+	--
+	-- No PointLight on these. Nine caps across eight plots is 72 lights on an
+	-- island that also has motes, node crystals and every beast's aura — well
+	-- past what Roblox will render, and the ones that do render just wash the
+	-- ground out. The neon material alone carries the accent.
 	for i = -1, 1 do
 		for _, spec in ipairs({
 			{ x = i * (half * 0.62), z = -half },
 			{ x = -half, z = i * (half * 0.62) },
 			{ x = half, z = i * (half * 0.62) },
 		}) do
-			local cap = Build.part({
-				size = Vector3.new(3.2, 3.2, 3.2),
-				cframe = origin * CFrame.new(Vector3.new(spec.x, 6.2, spec.z)) * CFrame.Angles(0, math.rad(45), 0),
-				color = PlotConfig.COLORS.altarGlow,
+			Build.part({
+				size = Vector3.new(2.6, 2.6, 2.6),
+				cframe = origin * CFrame.new(Vector3.new(spec.x, 6, spec.z)) * CFrame.Angles(0, math.rad(45), 0),
+				color = Color3.fromRGB(122, 96, 196),
 				material = Enum.Material.Neon,
 				canCollide = false,
 				name = "WallCap",
 				parent = model,
 			})
-			Build.glow(cap, PlotConfig.COLORS.altarGlow, 12, 1.2)
 		end
 	end
 end
@@ -135,10 +140,12 @@ local function buildScenery(model: Model, origin: CFrame, index: number)
 	local half = PlotConfig.PLOT_SIZE / 2
 
 	local KEEP_CLEAR = {
-		{ point = PlotConfig.ALTAR_OFFSET, radius = 22 },
-		{ point = PlotConfig.CHAMBER_OFFSET, radius = 20 },
-		{ point = PlotConfig.SPAWN_OFFSET, radius = 14 },
-		{ point = PlotConfig.HABITAT_CENTRE, radius = 16 },
+		{ point = PlotConfig.ALTAR_OFFSET, radius = 26 },
+		{ point = PlotConfig.CHAMBER_OFFSET, radius = 24 },
+		{ point = PlotConfig.SPAWN_OFFSET, radius = 18 },
+		-- Trees ring the habitat rather than filling it, so the beasts inside
+		-- stay the thing you look at.
+		{ point = PlotConfig.HABITAT_CENTRE, radius = 30 },
 	}
 
 	local function isClear(offset: Vector3): boolean
@@ -161,7 +168,7 @@ local function buildScenery(model: Model, origin: CFrame, index: number)
 
 	local placed = 0
 	local attempts = 0
-	while placed < 22 and attempts < 220 do
+	while placed < 26 and attempts < 300 do
 		attempts += 1
 		local offset = Vector3.new(rng:NextNumber(-half + 8, half - 8), 0, rng:NextNumber(-half + 8, half - 10))
 		if isClear(offset) then
@@ -218,8 +225,10 @@ end
 local function buildAltar(model: Model, origin: CFrame): (BasePart, BasePart)
 	local base = toWorld(origin, PlotConfig.ALTAR_OFFSET)
 
-	Build.disc(15, 2, base + Vector3.new(0, 1, 0), PlotConfig.COLORS.altarStone, model).Name = "AltarBase"
-	Build.disc(11, 2, base + Vector3.new(0, 2.6, 0), Color3.fromRGB(64, 54, 100), model).Name = "AltarStep"
+	-- Scaled up with the plot: the Altar has to still read as the landmark of
+	-- the sanctuary now there is half again as much ground around it.
+	Build.disc(19, 2, base + Vector3.new(0, 1, 0), PlotConfig.COLORS.altarStone, model).Name = "AltarBase"
+	Build.disc(14, 2, base + Vector3.new(0, 2.6, 0), Color3.fromRGB(64, 54, 100), model).Name = "AltarStep"
 
 	local pillar = Build.part({
 		size = Vector3.new(7, 9, 7),
@@ -240,7 +249,7 @@ local function buildAltar(model: Model, origin: CFrame): (BasePart, BasePart)
 		name = "AltarCrystal",
 		parent = model,
 	})
-	Build.glow(crystal, PlotConfig.COLORS.altarGlow, 30, 3)
+	Build.glow(crystal, PlotConfig.COLORS.altarGlow, 24, 1.8)
 
 	-- Orbiting element motes, mirroring the UI mockup's altar.
 	for i, element in ipairs(ElementConfig.List) do
@@ -255,7 +264,7 @@ local function buildAltar(model: Model, origin: CFrame): (BasePart, BasePart)
 			name = "Mote_" .. element.id,
 			parent = model,
 		})
-		Build.glow(mote, elementColor(element.id), 8, 1.2)
+		Build.glow(mote, elementColor(element.id), 7, 0.8)
 	end
 
 	local prompt = Instance.new("ProximityPrompt")
@@ -267,7 +276,7 @@ local function buildAltar(model: Model, origin: CFrame): (BasePart, BasePart)
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = pillar
 
-	Build.label(crystal, "Fusion Altar", Vector2.new(220, 50), 6)
+	Build.label(crystal, "Fusion Altar", Vector2.new(220, 50), 6, 95)
 
 	return pillar, crystal
 end
@@ -303,7 +312,7 @@ local function buildChamber(model: Model, origin: CFrame): (Model, BasePart)
 			name = "PodGlass",
 			parent = chamber,
 		})
-		Build.glow(podGlass, Color3.fromRGB(120, 200, 255), 10, 1.6)
+		Build.glow(podGlass, Color3.fromRGB(120, 200, 255), 9, 1.0)
 	end
 
 	-- Central containment core where the result appears.
@@ -317,7 +326,7 @@ local function buildChamber(model: Model, origin: CFrame): (Model, BasePart)
 		name = "ChamberCore",
 		parent = chamber,
 	})
-	Build.glow(core, Color3.fromRGB(255, 150, 220), 22, 2.5)
+	Build.glow(core, Color3.fromRGB(255, 150, 220), 18, 1.6)
 
 	local pillar = Build.part({
 		size = Vector3.new(5, 7, 5),
@@ -337,7 +346,7 @@ local function buildChamber(model: Model, origin: CFrame): (Model, BasePart)
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = pillar
 
-	Build.label(core, "Fusion Chamber", Vector2.new(250, 50), 5)
+	Build.label(core, "Fusion Chamber", Vector2.new(250, 50), 5, 95)
 
 	return chamber, pillar
 end
@@ -366,7 +375,7 @@ local function buildNode(model: Model, origin: CFrame, spec): NodeHandle
 	})
 	crystal.CFrame = CFrame.new(crystal.Position) * CFrame.Angles(0, math.rad(45), 0)
 
-	Build.label(crystal, spec.element, Vector2.new(150, 40), 4.5)
+	Build.label(crystal, spec.element, Vector2.new(150, 40), 4.5, 55)
 
 	return {
 		element = spec.element,
@@ -397,7 +406,7 @@ local function buildPad(model: Model, origin: CFrame, spec, order: number): PadH
 	-- A recessed plinth under the pad reads as a built object rather than a
 	-- decal lying on the grass.
 	Build.part({
-		size = Vector3.new(size + 2, 1, size + 2),
+		size = Vector3.new(size + 3, 1, size + 3),
 		position = base + Vector3.new(0, 0.5, 0),
 		color = PlotConfig.COLORS.plotRim,
 		material = Enum.Material.Slate,
@@ -405,22 +414,40 @@ local function buildPad(model: Model, origin: CFrame, spec, order: number): PadH
 		parent = model,
 	})
 
+	--[[
+		A pad is a DARK tile inside a thin neon frame, not a glowing slab.
+
+		Making the whole 19x19 surface emissive is what turned the plot into a
+		field of white squares: neon ignores lighting, so a large light-coloured
+		neon face is pure blowout no matter how the scene is exposed. Confining
+		the emission to a ~1.5-stud border keeps the "this is interactive" signal
+		while giving the eye an edge to read the pad's size against.
+	]]
+	local glow = Build.part({
+		size = Vector3.new(size + 1.5, 0.9, size + 1.5),
+		position = base + Vector3.new(0, 1.3, 0),
+		color = Color3.fromRGB(96, 76, 158),
+		material = Enum.Material.Neon,
+		canCollide = false,
+		name = "PadGlow",
+		parent = model,
+	})
+
 	local pad = Build.part({
 		size = Vector3.new(size, 1, size),
-		position = base + Vector3.new(0, 1.2, 0),
+		position = base + Vector3.new(0, 1.5, 0),
 		color = PlotConfig.COLORS.locked,
-		material = Enum.Material.Neon,
+		material = Enum.Material.SmoothPlastic,
 		canCollide = false,
 		name = "Pad_" .. spec.id,
 		parent = model,
 	})
-	pad.Transparency = 0.25
 
-	local billboard = Build.label(pad, spec.label, Vector2.new(260, 96), 6.5)
+	local billboard = Build.label(pad, spec.label, Vector2.new(260, 96), 7, 60)
 	local label = billboard:FindFirstChild("Text") :: TextLabel
 	label.Text = string.format("%s\n%s", spec.label, Format.abbreviate(spec.cost))
 
-	return { id = spec.id, pad = pad, label = label, purchased = false }
+	return { id = spec.id, pad = pad, glow = glow, label = label, purchased = false }
 end
 
 function PlotBuilder.build(index: number, origin: CFrame, parent: Instance): PlotHandle
@@ -452,7 +479,7 @@ function PlotBuilder.build(index: number, origin: CFrame, parent: Instance): Plo
 		name = "SignPost",
 		parent = model,
 	})
-	local signBillboard = Build.label(signPost, "Empty Sanctuary", Vector2.new(300, 70), 7)
+	local signBillboard = Build.label(signPost, "Empty Sanctuary", Vector2.new(300, 70), 7, 200)
 	local sign = signBillboard:FindFirstChild("Text") :: TextLabel
 
 	return {

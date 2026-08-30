@@ -29,62 +29,76 @@ function WorldBuilder.plotCFrame(index: number): CFrame
 	return CFrame.lookAt(position, Vector3.new(0, PlotConfig.GROUND_Y, 0))
 end
 
+--[[
+	Sky and exposure.
+
+	The first pass ran a bright midday sky at Brightness 2.4 with heavy bloom.
+	That is the worst possible backdrop for this game: every neon crystal, node
+	and buy-pad blew out to a flat white square, so the world lost all its
+	detail and the interface had to fight the background for attention.
+
+	The fix is to light the world for its own content — a deep violet twilight
+	that neon reads against, with the exposure pulled well back. Ambient does the
+	heavy lifting instead of sun brightness, so nothing is actually hard to see;
+	it is just no longer overexposed.
+]]
 local function buildSky()
-	-- A warm dusk read that flatters the altar/beast glows without going dark.
-	Lighting.Ambient = Color3.fromRGB(70, 62, 96)
-	Lighting.OutdoorAmbient = Color3.fromRGB(96, 88, 128)
-	Lighting.Brightness = 2.4
-	Lighting.ClockTime = 15.5
-	Lighting.GeographicLatitude = 20
-	Lighting.FogColor = Color3.fromRGB(46, 38, 74)
-	Lighting.FogEnd = 900
-	Lighting.FogStart = 320
+	Lighting.Ambient = Color3.fromRGB(84, 76, 112)
+	Lighting.OutdoorAmbient = Color3.fromRGB(112, 102, 148)
+	Lighting.Brightness = 1.1
+	Lighting.ExposureCompensation = -0.25
+	Lighting.ClockTime = 19.4 -- twilight: sun on the horizon, sky going violet
+	Lighting.GeographicLatitude = 12
+	Lighting.EnvironmentDiffuseScale = 0.6
+	Lighting.EnvironmentSpecularScale = 0.4
+	Lighting.FogColor = Color3.fromRGB(48, 38, 78)
+	Lighting.FogEnd = 1400
+	Lighting.FogStart = 460
 
-	if not Lighting:FindFirstChildOfClass("Atmosphere") then
-		local atmosphere = Instance.new("Atmosphere")
-		atmosphere.Density = 0.32
-		atmosphere.Haze = 1.4
-		atmosphere.Glare = 0.2
-		atmosphere.Color = Color3.fromRGB(190, 180, 225)
-		atmosphere.Decay = Color3.fromRGB(96, 84, 140)
-		atmosphere.Parent = Lighting
-	end
+	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
+	atmosphere.Density = 0.38
+	atmosphere.Offset = 0.2
+	atmosphere.Haze = 2.2
+	atmosphere.Glare = 0 -- glare is what smeared the horizon into white
+	atmosphere.Color = Color3.fromRGB(178, 162, 214)
+	atmosphere.Decay = Color3.fromRGB(84, 66, 126)
+	atmosphere.Parent = Lighting
 
-	if not Lighting:FindFirstChildOfClass("Sky") then
-		local sky = Instance.new("Sky")
-		sky.StarCount = 3000
-		sky.Parent = Lighting
-	end
+	-- No skybox textures: leaving the faces blank lets Roblox render its own
+	-- time-of-day gradient, which at 19:24 is the violet-into-orange band we
+	-- want. It needs no uploaded assets, so a fresh place looks right on the
+	-- first Play. Stars fade in as the sun drops.
+	local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky")
+	sky.StarCount = 6000
+	sky.CelestialBodiesShown = true
+	sky.SunAngularSize = 12
+	sky.MoonAngularSize = 14
+	sky.Parent = Lighting
 
 	--[[
-		Post-processing. Untextured procedural geometry looks cheap under flat
-		lighting no matter how well it is arranged; bloom on the neon and a mild
-		grade over the whole frame is what turns "coloured boxes" into a place.
-		All three are single instances with no per-frame cost.
+		Post-processing, deliberately restrained. Bloom above a HIGH threshold
+		only catches genuinely emissive surfaces, so crystals glow and everything
+		else keeps its edges — the previous low threshold bloomed the entire
+		frame.
 	]]
-	if not Lighting:FindFirstChildOfClass("BloomEffect") then
-		local bloom = Instance.new("BloomEffect")
-		bloom.Intensity = 0.9
-		bloom.Size = 32
-		bloom.Threshold = 1.1
-		bloom.Parent = Lighting
-	end
+	local bloom = Lighting:FindFirstChildOfClass("BloomEffect") or Instance.new("BloomEffect")
+	bloom.Intensity = 0.35
+	bloom.Size = 20
+	bloom.Threshold = 1.9
+	bloom.Parent = Lighting
 
-	if not Lighting:FindFirstChildOfClass("ColorCorrectionEffect") then
-		local grade = Instance.new("ColorCorrectionEffect")
-		grade.Brightness = 0.02
-		grade.Contrast = 0.14
-		grade.Saturation = 0.16
-		grade.TintColor = Color3.fromRGB(255, 246, 250)
-		grade.Parent = Lighting
-	end
+	local grade = Lighting:FindFirstChildOfClass("ColorCorrectionEffect") or Instance.new("ColorCorrectionEffect")
+	grade.Brightness = -0.03
+	grade.Contrast = 0.1
+	grade.Saturation = 0.12
+	grade.TintColor = Color3.fromRGB(240, 236, 255)
+	grade.Parent = Lighting
 
-	if not Lighting:FindFirstChildOfClass("SunRaysEffect") then
-		local rays = Instance.new("SunRaysEffect")
-		rays.Intensity = 0.09
-		rays.Spread = 0.7
-		rays.Parent = Lighting
-	end
+	-- Sun rays across a low sun turn into a white wash; keep them barely there.
+	local rays = Lighting:FindFirstChildOfClass("SunRaysEffect") or Instance.new("SunRaysEffect")
+	rays.Intensity = 0.02
+	rays.Spread = 0.4
+	rays.Parent = Lighting
 end
 
 local function buildHub(parent: Instance)
@@ -143,7 +157,7 @@ local function buildHub(parent: Instance)
 			name = "PillarCrystal",
 			parent = arena,
 		})
-		Build.glow(crystal, PlotConfig.COLORS.hubTrim, 16, 1.5)
+		Build.glow(crystal, PlotConfig.COLORS.hubTrim, 14, 1.0)
 	end
 
 	local banner = Build.part({
@@ -154,7 +168,7 @@ local function buildHub(parent: Instance)
 		name = "ArenaBanner",
 		parent = arena,
 	})
-	Build.label(banner, "THE ARENA", Vector2.new(400, 90), 0)
+	Build.label(banner, "THE ARENA", Vector2.new(400, 90), 0, 260)
 
 	-- Paths from the hub out to each plot, so the world reads as connected.
 	local paths = Build.folder("Paths", hub)

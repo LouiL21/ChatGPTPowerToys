@@ -125,7 +125,7 @@ function AmbienceService:Start()
 					part.Size = animator.baseSize * scale
 					part.CFrame = CFrame.new(animator.origin) * CFrame.Angles(t * 0.4, t * 0.7, 0)
 					if animator.light then
-						animator.light.Brightness = 2.4 + math.sin(t * 1.6) * 0.8
+						animator.light.Brightness = 1.5 + math.sin(t * 1.6) * 0.5
 					end
 				elseif animator.kind == "bob" then
 					part.CFrame = CFrame.new(animator.origin + Vector3.new(0, math.sin(t * 1.4) * 0.6, 0))

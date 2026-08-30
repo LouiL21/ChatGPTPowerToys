@@ -15,9 +15,12 @@ local PlotConfig = {}
 
 -- ── Island / plot geometry ────────────────────────────────────────────────
 PlotConfig.PLOT_COUNT = 8 -- plots per server (matches a healthy Roblox lobby)
-PlotConfig.PLOT_SIZE = 108 -- square plot, studs
-PlotConfig.PLOT_RING_RADIUS = 250 -- distance from island centre to plot centre
-PlotConfig.HUB_RADIUS = 92 -- central hub disc
+PlotConfig.PLOT_SIZE = 150 -- square plot, studs
+-- Ring radius has to keep pace with plot size or neighbours crowd each other.
+-- Chord spacing between adjacent plots is 2*R*sin(pi/8) ≈ 0.765*R, so 340
+-- leaves ~110 studs of clear ground between one sanctuary and the next.
+PlotConfig.PLOT_RING_RADIUS = 340 -- distance from island centre to plot centre
+PlotConfig.HUB_RADIUS = 100 -- central hub disc
 PlotConfig.GROUND_Y = 0
 
 PlotConfig.COLORS = {
@@ -29,21 +32,26 @@ PlotConfig.COLORS = {
 	water = Color3.fromRGB(38, 86, 140),
 	altarStone = Color3.fromRGB(52, 44, 82),
 	altarGlow = Color3.fromRGB(167, 139, 250),
-	locked = Color3.fromRGB(70, 66, 88),
-	affordable = Color3.fromRGB(255, 196, 77), -- pad you can buy RIGHT NOW
+	locked = Color3.fromRGB(58, 54, 76),
+	-- Deliberately a deep amber, not a bright one. Neon material plus bloom
+	-- pushes any light colour straight to white, which is what turned the pads
+	-- into featureless glowing squares.
+	affordable = Color3.fromRGB(186, 124, 34), -- pad you can buy RIGHT NOW
 }
 
 -- ── Element nodes ─────────────────────────────────────────────────────────
 -- Physical structures that periodically emit a shard pickup the player runs
 -- over. Fire and Water start unlocked so the core loop is available instantly;
 -- the rest are tycoon purchases.
+-- Nodes hug the side walls, leaving the middle of the plot clear for the
+-- habitat. Crowding them inward is what made the sanctuary feel packed.
 PlotConfig.Nodes = {
-	{ element = "Fire", offset = Vector3.new(-34, 0, -14), unlockedByDefault = true },
-	{ element = "Water", offset = Vector3.new(34, 0, -14), unlockedByDefault = true },
-	{ element = "Earth", offset = Vector3.new(-42, 0, 12), unlockedByDefault = false },
-	{ element = "Air", offset = Vector3.new(42, 0, 12), unlockedByDefault = false },
-	{ element = "Nature", offset = Vector3.new(-26, 0, 34), unlockedByDefault = false },
-	{ element = "Void", offset = Vector3.new(26, 0, 34), unlockedByDefault = false },
+	{ element = "Fire", offset = Vector3.new(-58, 0, -22), unlockedByDefault = true },
+	{ element = "Water", offset = Vector3.new(58, 0, -22), unlockedByDefault = true },
+	{ element = "Earth", offset = Vector3.new(-63, 0, 6), unlockedByDefault = false },
+	{ element = "Air", offset = Vector3.new(63, 0, 6), unlockedByDefault = false },
+	{ element = "Nature", offset = Vector3.new(-48, 0, 32), unlockedByDefault = false },
+	{ element = "Void", offset = Vector3.new(48, 0, 32), unlockedByDefault = false },
 }
 
 PlotConfig.NODE_BASE_INTERVAL = 6 -- seconds between shard emissions at tier 1
@@ -51,16 +59,16 @@ PlotConfig.NODE_TIER_SPEEDUP = 0.78 -- interval multiplier per node tier
 PlotConfig.NODE_MAX_TIER = 5
 
 -- ── Landmarks ─────────────────────────────────────────────────────────────
-PlotConfig.ALTAR_OFFSET = Vector3.new(0, 0, -34) -- Summoning Altar, back-centre
-PlotConfig.CHAMBER_OFFSET = Vector3.new(-40, 0, -34) -- Fusion Chamber, back-left
-PlotConfig.SPAWN_OFFSET = Vector3.new(0, 0, 40) -- where the owner is placed
-PlotConfig.SIGN_OFFSET = Vector3.new(0, 0, 48) -- nameplate at the plot entrance
+PlotConfig.ALTAR_OFFSET = Vector3.new(0, 0, -52) -- Summoning Altar, back-centre
+PlotConfig.CHAMBER_OFFSET = Vector3.new(-54, 0, -50) -- Fusion Chamber, back-left
+PlotConfig.SPAWN_OFFSET = Vector3.new(0, 0, 62) -- where the owner is placed
+PlotConfig.SIGN_OFFSET = Vector3.new(0, 0, 72) -- nameplate at the plot entrance
 
 -- Beasts wander inside this radius around the habitat centre. The radius has to
 -- grow with the slot count or a full sanctuary reads as a pile rather than a
 -- collection you can walk through.
-PlotConfig.HABITAT_CENTRE = Vector3.new(0, 0, 2)
-PlotConfig.HABITAT_RADIUS = 36
+PlotConfig.HABITAT_CENTRE = Vector3.new(0, 0, -4)
+PlotConfig.HABITAT_RADIUS = 46
 
 -- ── Pickups ───────────────────────────────────────────────────────────────
 PlotConfig.MAX_PICKUPS_PER_PLOT = 28 -- hard cap: keeps part count (and lag) bounded
@@ -114,11 +122,11 @@ PlotConfig.BuyPads = {
 -- Pads are laid out in rows across the plot's front edge. One row of eleven made
 -- each pad too small to read or stand on comfortably, so they wrap instead: a
 -- bigger pad is easier to hit on mobile and gives the label room to breathe.
-PlotConfig.PAD_ROW_Z = 46 -- plot-local Z of the FRONT pad row
-PlotConfig.PAD_ROW_GAP = 19 -- distance between pad rows (rows march toward the altar)
+PlotConfig.PAD_ROW_Z = 62 -- plot-local Z of the FRONT pad row
+PlotConfig.PAD_ROW_GAP = 25 -- distance between pad rows (rows march toward the altar)
 PlotConfig.PAD_PER_ROW = 6
-PlotConfig.PAD_SIZE = 15 -- square pad footprint, studs
-PlotConfig.PAD_SPACING = 18
+PlotConfig.PAD_SIZE = 19 -- square pad footprint, studs
+PlotConfig.PAD_SPACING = 23
 PlotConfig.BASE_HABITAT_SLOTS = 6 -- beasts that can physically live on the plot
 
 -- ── Rarity → physical presence ────────────────────────────────────────────
