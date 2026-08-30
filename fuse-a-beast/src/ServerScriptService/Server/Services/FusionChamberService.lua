@@ -117,7 +117,32 @@ function FusionChamberService:_variantFuse(player: Player, data, beastId: string
 	}
 end
 
--- Different species: roll a hybrid from the parents' combined elements.
+--[[
+	Different species: roll a hybrid from the parents' combined elements.
+
+	THE FLOOR RULE: the Chamber never hands back something weaker than the best
+	beast you put in. Previously the roll was unconstrained, so feeding it two
+	Epics could return a Common — you paid essence and two creatures to get
+	something worse, which made hybrid fusion feel like a punishment.
+
+	Three mechanisms enforce it, in order of preference:
+	  1. The roll is floored at the better parent's RARITY.
+	  2. The offspring inherits the HIGHER parent variant (it used to take the
+	     lower). Rarity floor + higher variant is a proof, not a check: the
+	     result's multipliers are each >= both parents', so its power and health
+	     are too.
+	  3. If nothing at or above that rarity is eligible for these elements, fall
+	     back to the best that is and top the VARIANT up to cover the gap —
+	     capped at one tier, so a near miss is compensated but two Secrets can
+	     never launder a Common into a Rainbow.
+	If even that cannot reach the floor, the fusion is refused and refunded
+	rather than handing back a downgrade.
+
+	Power and health share a multiplier (see BeastInventory.stats), so comparing
+	power alone guarantees both.
+]]
+local MAX_VARIANT_COMPENSATION = 1
+
 function FusionChamberService:_hybridFuse(player: Player, data, a, b)
 	local beastA = BeastConfig.ById[a.beastId]
 	local beastB = BeastConfig.ById[b.beastId]
@@ -134,18 +159,51 @@ function FusionChamberService:_hybridFuse(player: Player, data, a, b)
 		end
 	end
 
-	local result = Registry.FusionService:rollFromElements(player, elements)
+	local floorPower =
+		math.max(BeastInventory.stats(a.beastId, a.variant).power, BeastInventory.stats(b.beastId, b.variant).power)
+
+	-- The better parent's rarity is the floor for the roll.
+	local rarityIndexOf = function(rarity: string): number
+		return table.find(GameConfig.RARITY_ORDER, rarity) or 1
+	end
+	local floorRarity = rarityIndexOf(beastA.rarity) >= rarityIndexOf(beastB.rarity) and beastA.rarity or beastB.rarity
+
+	local result = Registry.FusionService:rollFromElements(player, elements, floorRarity)
+	if not result then
+		-- Nothing that rare exists for these elements; take the best available and
+		-- make up the difference in variant instead.
+		result = Registry.FusionService:rollFromElements(player, elements)
+	end
 	if not result then
 		ServerNet.notify(player, "These two produced nothing. Try a different pair.", "warn")
+		return nil
+	end
+
+	-- The offspring inherits the HIGHER parent variant, then climbs if it still
+	-- falls short of the floor.
+	local startIndex = math.max(VariantConfig.index(a.variant), VariantConfig.index(b.variant))
+	local ceiling = math.min(#VariantConfig.Order, startIndex + MAX_VARIANT_COMPENSATION)
+	local inheritedIndex = startIndex
+	while
+		BeastInventory.stats(result.id, VariantConfig.Order[inheritedIndex]).power < floorPower
+		and inheritedIndex < ceiling
+	do
+		inheritedIndex += 1
+	end
+	local inherited = VariantConfig.Order[inheritedIndex]
+
+	if BeastInventory.stats(result.id, inherited).power < floorPower then
+		ServerNet.notify(
+			player,
+			string.format("Nothing born of %s could match those two. Try a pair with more elements.", table.concat(elements, "+")),
+			"warn"
+		)
 		return nil
 	end
 
 	BeastInventory.remove(data.codex, a.beastId, a.variant, 1)
 	BeastInventory.remove(data.codex, b.beastId, b.variant, 1)
 
-	-- The offspring inherits the LOWER of the two parent variants, so you can't
-	-- launder a Golden into a brand-new species for free.
-	local inherited = VariantConfig.Order[math.min(VariantConfig.index(a.variant), VariantConfig.index(b.variant))]
 	local isNew = BeastInventory.add(data.codex, result.id, inherited, 1)
 
 	if isNew then

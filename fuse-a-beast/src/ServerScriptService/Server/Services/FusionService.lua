@@ -74,12 +74,13 @@ function FusionService:_eligibleByRarity(inputSet)
 	return byRarity
 end
 
-function FusionService:_rollRarity(elements: { string }, eligibleByRarity, luck: number): string?
+function FusionService:_rollRarity(elements: { string }, eligibleByRarity, luck: number, minRarity: string?): string?
 	local bias = RecipeConfig.getBias(elements) or {}
+	local floor = minRarity and (RARITY_INDEX[minRarity] or 1) or 1
 	local pool: { { rarity: string, weight: number } } = {}
 	local total = 0
 	for _, rarity in ipairs(GameConfig.RARITY_ORDER) do
-		if eligibleByRarity[rarity] then
+		if eligibleByRarity[rarity] and (RARITY_INDEX[rarity] or 1) >= floor then
 			local weight = GameConfig.RARITY_BASE_WEIGHTS[rarity] * (bias[rarity] or 1)
 			local idx = RARITY_INDEX[rarity]
 			if idx >= 3 then -- luck lifts the Rare+ tail only
@@ -107,13 +108,21 @@ end
 	The shared roll. Returns the chosen beast config entry, or nil when no beast
 	is eligible for the given element set. Used by the Altar (from shards) and by
 	the Fusion Chamber (from two parents' combined elements).
+
+	`minRarity` excludes everything below that rarity from the roll. The Chamber
+	passes its parents' best rarity so a fusion can never roll you something
+	worse than what you fed it; the Altar leaves it nil, since a summon has no
+	inputs to be worse than.
 ]]
-function FusionService:rollFromElements(player: Player, elements: { string })
+function FusionService:rollFromElements(player: Player, elements: { string }, minRarity: string?)
 	local inputSet = distinctSet(elements)
 	local eligibleByRarity = self:_eligibleByRarity(inputSet)
 	local luck = Registry.MonetizationService:getLuck(player)
-	local rarity = self:_rollRarity(elements, eligibleByRarity, luck)
+	local rarity = self:_rollRarity(elements, eligibleByRarity, luck, minRarity)
 	if not rarity then
+		if minRarity then
+			return nil -- caller decides whether to retry unconstrained
+		end
 		Logger:warn("No eligible beast for", table.concat(elements, "+"))
 		return nil
 	end

@@ -354,7 +354,7 @@ function UIController:_renderChamber()
 		local nextVariant = VariantConfig.next(a.variant)
 		if nextVariant then
 			previewText = string.format(
-				"Variant fusion → %.0f%% chance of a %s %s",
+				"Variant fusion → %.0f%% chance of a %s %s\nA failed roll returns one unchanged — never weaker.",
 				VariantConfig.get(a.variant).upgradeChance * 100,
 				nextVariant,
 				BeastConfig.ById[a.beastId].name
@@ -365,12 +365,21 @@ function UIController:_renderChamber()
 			previewColor = Theme.red
 		end
 	else
-		previewText = "Hybrid fusion → a new beast from their combined elements"
+		-- Spell the floor out. A player who has been burned by a bad roll needs
+		-- to see the guarantee before they will risk two good beasts again.
+		local best = math.max(
+			BeastInventory.stats(a.beastId, a.variant).power,
+			BeastInventory.stats(b.beastId, b.variant).power
+		)
+		previewText = string.format(
+			"Hybrid fusion → a new beast from their combined elements.\nGuaranteed at least %s power and the matching HP.",
+			Format.abbreviate(best)
+		)
 		previewColor = Theme.rarity.Mythic
 	end
 
 	UI.label(previewText, {
-		Size = UDim2.new(1, -8, 0, 34),
+		Size = UDim2.new(1, -8, 0, 46),
 		TextSize = 13,
 		TextColor3 = previewColor,
 		TextWrapped = true,

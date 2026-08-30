@@ -4,6 +4,23 @@ All notable changes to Fuse a Beast are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.4] — 2026-08-30
+
+### Changed
+- **The Fusion Chamber can never hand back a downgrade.** Hybrid fusion rolled
+  unconstrained, so feeding it two Epics could return a Common — you paid
+  essence and two creatures for something worse. Now the roll is floored at the
+  better parent's rarity, and the offspring inherits the **higher** parent
+  variant rather than the lower. Those two together are a proof, not a check:
+  both multipliers are at least each parent's, so power and health are too.
+  - Where no beast at that rarity exists for the pair's elements, the variant
+    is topped up to cover the gap — capped at one tier, so a near miss is
+    compensated but two Secrets can't launder a Common into a Rainbow.
+  - If even that can't reach the floor, the fusion is refused and refunded
+    instead of returning something weaker.
+- The Chamber preview now states the guaranteed floor before you commit, and
+  notes that a failed variant roll returns one beast unchanged.
+
 ## [0.3.3] — 2026-08-30
 
 ### Fixed
