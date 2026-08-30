@@ -4,6 +4,26 @@ All notable changes to Fuse a Beast are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] — 2026-08-30
+
+**Second playtest pass — scale and light.**
+
+### Changed
+- **Plots are 150 studs** (was 108) on a wider ring, with the altar, chamber,
+  node positions and pad rows spread to match and habitat radius up to 46.
+  Nodes moved out to hug the side walls so the middle of the sanctuary stays
+  open.
+- **Twilight sky.** A bright midday sky is the worst backdrop for a game built
+  out of neon. Now 19:24 violet twilight with stars, lit by ambient rather than
+  sun brightness so nothing is harder to see. No skybox textures required.
+- **Stopped the blowout.** Bloom threshold 1.1 → 1.9 so only emissive surfaces
+  glow instead of the whole frame; exposure pulled back; sun-ray glare off.
+  Buy-pads became dark tiles inside a thin neon frame instead of 19×19 neon
+  faces. Removed 72 wall-cap PointLights that exceeded what Roblox renders.
+- **Label distances.** Every billboard rendered to 220 studs, stacking dozens of
+  names into unreadable soup. They now fade at a distance matched to what they
+  name.
+
 ## [0.3.1] — 2026-08-30
 
 **First playtest pass.** Everything here comes from playing 0.3.0 and writing
