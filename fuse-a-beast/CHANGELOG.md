@@ -4,6 +4,28 @@ All notable changes to Fuse a Beast are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.3] — 2026-08-30
+
+### Fixed
+- **The Arena was a UI panel, not a fight.** Bosses existed only as numbers —
+  never built, never spawned — so your pet stood motionless next to nothing
+  while a HUD panel resolved the battle, and the player stayed on their own plot
+  where they couldn't even see that.
+
+### Added
+- `ArenaStage`: the physical presentation of one battle. Fighters square up,
+  the attacker lunges, the defender flinches on contact, impacts burst and
+  damage numbers float off — crits and element advantage each read differently.
+  Health bars sit over the creatures taking the hits. The loser topples and
+  dissolves.
+- **Bosses have bodies.** Each of the five is hand-assigned a body plan — slab
+  golem, coiling serpent, brawler, raptor, then something barely there — built
+  at boss scale in a darkened, ember-lit palette.
+- Players are moved ringside for the fight and sent home afterwards.
+
+`BattleService` still decides every outcome; the stage is told what happened and
+shows it, so combat stays server-authoritative.
+
 ## [0.3.2] — 2026-08-30
 
 **Second playtest pass — scale and light.**
