@@ -44,6 +44,8 @@ export type PlotHandle = {
 	altarCrystal: BasePart,
 	chamber: Model,
 	chamberPillar: BasePart,
+	barn: Model,
+	barnPost: BasePart,
 	sign: TextLabel,
 	nodes: { [string]: NodeHandle },
 	pads: { [string]: PadHandle },
@@ -142,6 +144,7 @@ local function buildScenery(model: Model, origin: CFrame, index: number)
 	local KEEP_CLEAR = {
 		{ point = PlotConfig.ALTAR_OFFSET, radius = 26 },
 		{ point = PlotConfig.CHAMBER_OFFSET, radius = 24 },
+		{ point = PlotConfig.BARN_OFFSET, radius = 34 },
 		{ point = PlotConfig.SPAWN_OFFSET, radius = 18 },
 		-- Trees ring the habitat rather than filling it, so the beasts inside
 		-- stay the thing you look at.
@@ -351,6 +354,187 @@ local function buildChamber(model: Model, origin: CFrame): (Model, BasePart)
 	return chamber, pillar
 end
 
+--[[
+	The Beast Barn: the mid-game landmark at the back of the plot.
+
+	Everything else on a sanctuary is a crystal or a slab, so the plot reads as
+	an arcane workshop and nothing else. A barn — pitched roof, big doors, hay,
+	a fence — is a recognisably WARM building, and having one thing on the plot
+	that is not glowing is what makes the glowing things read as special.
+
+	Built hidden and revealed by PlotService:applyProgression on purchase, the
+	same as the Chamber.
+]]
+local function buildBarn(model: Model, origin: CFrame): (Model, BasePart)
+	local base = toWorld(origin, PlotConfig.BARN_OFFSET)
+	local barn = Instance.new("Model")
+	barn.Name = "BeastBarn"
+	barn.Parent = model
+
+	local WIDTH, DEPTH, WALL = 34, 26, 14
+	local PLANK = Color3.fromRGB(154, 58, 48)
+	local TRIM = Color3.fromRGB(238, 232, 214)
+	local ROOF = Color3.fromRGB(62, 52, 78)
+
+	local function plank(size: Vector3, offset: Vector3, color: Color3, material: Enum.Material?, name: string)
+		Build.part({
+			size = size,
+			position = base + offset,
+			color = color,
+			material = material or Enum.Material.WoodPlanks,
+			name = name,
+			parent = barn,
+		})
+	end
+
+	-- Foundation and floor.
+	plank(Vector3.new(WIDTH + 4, 1.5, DEPTH + 4), Vector3.new(0, 0.75, 0), Color3.fromRGB(72, 66, 88), Enum.Material.Slate, "Foundation")
+	plank(Vector3.new(WIDTH, 0.6, DEPTH), Vector3.new(0, 1.7, 0), Color3.fromRGB(112, 84, 60), Enum.Material.Wood, "Floor")
+
+	-- Side and back walls. The front is left open so beasts (and the owner) can
+	-- walk straight in — a barn you cannot enter is a prop.
+	plank(Vector3.new(1.6, WALL, DEPTH), Vector3.new(-WIDTH / 2, WALL / 2 + 2, 0), PLANK, nil, "WallLeft")
+	plank(Vector3.new(1.6, WALL, DEPTH), Vector3.new(WIDTH / 2, WALL / 2 + 2, 0), PLANK, nil, "WallRight")
+	plank(Vector3.new(WIDTH, WALL, 1.6), Vector3.new(0, WALL / 2 + 2, DEPTH / 2), PLANK, nil, "WallBack")
+
+	-- White trim bands: the detail that reads "barn" rather than "red shed".
+	for _, spec in ipairs({
+		{ size = Vector3.new(WIDTH + 1, 1.2, 1.8), offset = Vector3.new(0, 3, DEPTH / 2) },
+		{ size = Vector3.new(WIDTH + 1, 1.2, 1.8), offset = Vector3.new(0, WALL + 1.4, DEPTH / 2) },
+		{ size = Vector3.new(1.8, 1.2, DEPTH + 1), offset = Vector3.new(-WIDTH / 2, WALL + 1.4, 0) },
+		{ size = Vector3.new(1.8, 1.2, DEPTH + 1), offset = Vector3.new(WIDTH / 2, WALL + 1.4, 0) },
+	}) do
+		plank(spec.size, spec.offset, TRIM, Enum.Material.SmoothPlastic, "Trim")
+	end
+
+	-- Gable roof from two wedges — the whole reason wedges exist in Build.
+	local roofY = WALL + 2 + 5
+	for _, side in ipairs({ -1, 1 }) do
+		Build.part({
+			size = Vector3.new(WIDTH / 2 + 1, 10, DEPTH + 4),
+			cframe = base
+				* CFrame.new(side * (WIDTH / 4), roofY, 0)
+				-- Mirror the wedge so the two halves meet at the ridge.
+				* CFrame.Angles(0, side > 0 and 0 or math.pi, 0),
+			color = ROOF,
+			material = Enum.Material.Slate,
+			kind = "wedge",
+			name = "Roof",
+			parent = barn,
+		})
+	end
+
+	-- Gable face above the doors, and the ridge beam.
+	plank(Vector3.new(WIDTH, 1, 1.4), Vector3.new(0, roofY + 10, 0), TRIM, Enum.Material.SmoothPlastic, "Ridge")
+
+	-- Hay loft opening with a warm light inside: the barn should glow from
+	-- within at dusk, which is the whole point of putting it in a twilight world.
+	local loft = Build.part({
+		size = Vector3.new(9, 8, 1),
+		position = base + Vector3.new(0, WALL - 1, -DEPTH / 2 - 0.4),
+		color = Color3.fromRGB(46, 32, 26),
+		material = Enum.Material.Wood,
+		name = "LoftOpening",
+		parent = barn,
+	})
+	Build.glow(loft, Color3.fromRGB(255, 186, 96), 20, 1.4)
+
+	-- Doorway frame + two hanging doors, swung open.
+	for _, side in ipairs({ -1, 1 }) do
+		Build.part({
+			size = Vector3.new(WIDTH / 2 - 2, WALL - 2, 1.2),
+			cframe = base
+				* CFrame.new(side * (WIDTH / 2 - 1), (WALL - 2) / 2 + 2, -DEPTH / 2 - 3)
+				* CFrame.Angles(0, side * math.rad(58), 0),
+			color = TRIM,
+			material = Enum.Material.WoodPlanks,
+			name = "Door",
+			parent = barn,
+		})
+	end
+
+	-- Hay bales and a trough, so the inside is not an empty box.
+	for _, offset in ipairs({
+		Vector3.new(-WIDTH / 2 + 6, 4, DEPTH / 2 - 6),
+		Vector3.new(-WIDTH / 2 + 6, 8, DEPTH / 2 - 6),
+		Vector3.new(WIDTH / 2 - 7, 4, DEPTH / 2 - 5),
+	}) do
+		Build.part({
+			size = Vector3.new(6, 4.5, 6),
+			cframe = base * CFrame.new(offset) * CFrame.Angles(0, math.rad(18), 0),
+			color = Color3.fromRGB(214, 178, 82),
+			material = Enum.Material.Grass,
+			canCollide = false,
+			name = "HayBale",
+			parent = barn,
+		})
+	end
+	plank(Vector3.new(12, 2.4, 4), Vector3.new(0, 3.2, DEPTH / 2 - 5), Color3.fromRGB(96, 72, 52), Enum.Material.Wood, "Trough")
+
+	-- Paddock fence sweeping out from the front corners.
+	for _, side in ipairs({ -1, 1 }) do
+		for i = 0, 3 do
+			local x = side * (WIDTH / 2 + 4 + i * 7)
+			Build.part({
+				size = Vector3.new(1, 6, 1),
+				position = base + Vector3.new(x, 3, -DEPTH / 2 - 6),
+				color = Color3.fromRGB(126, 96, 66),
+				material = Enum.Material.Wood,
+				canCollide = false,
+				name = "FencePost",
+				parent = barn,
+			})
+			if i > 0 then
+				Build.part({
+					size = Vector3.new(7, 0.8, 0.8),
+					position = base + Vector3.new(x - side * 3.5, 4.4, -DEPTH / 2 - 6),
+					color = Color3.fromRGB(126, 96, 66),
+					material = Enum.Material.Wood,
+					canCollide = false,
+					name = "FenceRail",
+					parent = barn,
+				})
+			end
+		end
+	end
+
+	-- A weather vane on the ridge, animated by AmbienceService.
+	local vane = Build.part({
+		size = Vector3.new(3.2, 3.2, 0.4),
+		position = base + Vector3.new(0, roofY + 14, 0),
+		color = PlotConfig.COLORS.altarGlow,
+		material = Enum.Material.Neon,
+		canCollide = false,
+		name = "BarnVane",
+		parent = barn,
+	})
+	Build.glow(vane, PlotConfig.COLORS.altarGlow, 14, 1.2)
+
+	-- The interaction post: walking up opens the Pets panel, which is where you
+	-- decide who lives here.
+	local post = Build.part({
+		size = Vector3.new(2.4, 8, 2.4),
+		position = base + Vector3.new(-WIDTH / 2 - 5, 6, -DEPTH / 2 - 2),
+		color = Color3.fromRGB(96, 72, 52),
+		material = Enum.Material.Wood,
+		name = "BarnPost",
+		parent = barn,
+	})
+
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "BarnPrompt"
+	prompt.ActionText = "Manage Beasts"
+	prompt.ObjectText = "Beast Barn"
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 16
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = post
+
+	Build.label(vane, "Beast Barn", Vector2.new(250, 50), 5, 95)
+
+	return barn, post
+end
+
 local function buildNode(model: Model, origin: CFrame, spec): NodeHandle
 	local base = toWorld(origin, spec.offset)
 	local color = elementColor(spec.element)
@@ -459,6 +643,7 @@ function PlotBuilder.build(index: number, origin: CFrame, parent: Instance): Plo
 	buildScenery(model, origin, index)
 	local altar, altarCrystal = buildAltar(model, origin)
 	local chamber, chamberPillar = buildChamber(model, origin)
+	local barn, barnPost = buildBarn(model, origin)
 
 	local nodes: { [string]: NodeHandle } = {}
 	for _, spec in ipairs(PlotConfig.Nodes) do
@@ -490,6 +675,8 @@ function PlotBuilder.build(index: number, origin: CFrame, parent: Instance): Plo
 		altarCrystal = altarCrystal,
 		chamber = chamber,
 		chamberPillar = chamberPillar,
+		barn = barn,
+		barnPost = barnPost,
 		sign = sign,
 		nodes = nodes,
 		pads = pads,

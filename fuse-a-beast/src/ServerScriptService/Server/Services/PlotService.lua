@@ -95,6 +95,31 @@ function PlotService:_paintPad(pad, spec, purchased: boolean, affordable: boolea
 		or string.format("%s\n%s essence", spec.label, Format.abbreviate(spec.cost))
 end
 
+--[[
+	Shows or hides a purchasable building.
+
+	`glassName`/`glassTransparency` let one structure keep a see-through part
+	(the Chamber's pods) without the reveal flattening it to opaque.
+]]
+function PlotService:_reveal(model: Model?, owned: boolean, glassName: string?, glassTransparency: number)
+	if not model then
+		return
+	end
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local isGlass = glassName ~= nil and part.Name == glassName
+			part.Transparency = owned and (isGlass and glassTransparency or 0) or 1
+			part.CanCollide = owned and not isGlass
+		elseif part:IsA("PointLight") then
+			part.Enabled = owned
+		elseif part:IsA("BillboardGui") then
+			part.Enabled = owned
+		elseif part:IsA("ProximityPrompt") then
+			part.Enabled = owned
+		end
+	end
+end
+
 function PlotService:applyProgression(player: Player)
 	local handle = self:getHandle(player)
 	local data = Registry.DataService:get(player)
@@ -130,21 +155,10 @@ function PlotService:applyProgression(player: Player)
 		end
 	end
 
-	-- The Fusion Chamber only exists once bought — hiding it keeps the first
-	-- session focused on summoning, and makes buying it feel like an event.
-	local hasChamber = data.plot.purchasedPads["fusion_chamber"] == true
-	for _, part in ipairs(handle.chamber:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Transparency = hasChamber and (part.Name == "PodGlass" and 0.55 or 0) or 1
-			part.CanCollide = hasChamber and part.Name ~= "PodGlass"
-		elseif part:IsA("PointLight") then
-			part.Enabled = hasChamber
-		elseif part:IsA("BillboardGui") then
-			part.Enabled = hasChamber
-		elseif part:IsA("ProximityPrompt") then
-			part.Enabled = hasChamber
-		end
-	end
+	-- Buildings only exist once bought — hiding them keeps the first session
+	-- focused on summoning, and makes each purchase land as an event.
+	self:_reveal(handle.chamber, data.plot.purchasedPads["fusion_chamber"] == true, "PodGlass", 0.55)
+	self:_reveal(handle.barn, data.plot.purchasedPads["beast_barn"] == true, nil, 0)
 
 	handle.sign.Text = player.DisplayName .. "'s Sanctuary"
 end
@@ -157,7 +171,10 @@ function PlotService:habitatSlots(player: Player): number
 		return PlotConfig.BASE_HABITAT_SLOTS
 	end
 	local gamepassBonus = Registry.MonetizationService:getDisplaySlots(player) - GameConfig.DISPLAY_SLOT_BASE
-	return PlotConfig.BASE_HABITAT_SLOTS + data.plot.habitatSlots + math.max(0, gamepassBonus)
+	-- The Barn houses beasts too, so it counts toward capacity rather than being
+	-- a building you buy and then still have nowhere to put anything.
+	local barn = data.plot.purchasedPads["beast_barn"] and PlotConfig.BARN_HABITAT_SLOTS or 0
+	return PlotConfig.BASE_HABITAT_SLOTS + data.plot.habitatSlots + barn + math.max(0, gamepassBonus)
 end
 
 local function firstFreeIndex(): number?
@@ -222,6 +239,8 @@ function PlotService:_bindAltar(player: Player, handle)
 		"This is someone else's Altar. Head home to summon!")
 	bindPrompt(handle, handle.chamberPillar, "ChamberPrompt", player, "OpenChamber",
 		"This is someone else's Chamber. Head home to fuse!")
+	bindPrompt(handle, handle.barnPost, "BarnPrompt", player, "OpenBarn",
+		"This is someone else's Barn. Head home to tend yours!")
 end
 
 function PlotService:teleportHome(player: Player)

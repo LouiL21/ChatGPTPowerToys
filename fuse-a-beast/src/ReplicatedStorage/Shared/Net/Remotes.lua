@@ -40,6 +40,7 @@ Remotes.ServerEvents = {
 	"FusionResult", -- result of a fusion (for animation + discovery popup)
 	"OpenFusion", -- player activated the Altar; client opens the summon panel
 	"OpenChamber", -- player activated the Fusion Chamber
+	"OpenBarn", -- player activated the Beast Barn
 	"BattleEvent", -- streamed turn-by-turn battle updates
 	"DuelChallenge", -- someone challenged you to a duel
 }

@@ -69,6 +69,13 @@ function AmbienceService:registerPlot(handle)
 		end
 	end
 
+	if handle.barn then
+		local vane = handle.barn:FindFirstChild("BarnVane")
+		if vane and vane:IsA("BasePart") then
+			register(vane, "pulse", { spin = 0.9 })
+		end
+	end
+
 	if handle.chamber then
 		local core = handle.chamber:FindFirstChild("ChamberCore")
 		if core and core:IsA("BasePart") then

@@ -17,6 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local GameConfig = require(Shared.Config.GameConfig)
+local PlotConfig = require(Shared.Config.PlotConfig)
 local ElementConfig = require(Shared.Config.ElementConfig)
 local BeastConfig = require(Shared.Config.BeastConfig)
 local VariantConfig = require(Shared.Config.VariantConfig)
@@ -78,10 +79,15 @@ function EssenceService:getRate(player: Player): number
 	if not data then
 		return 0
 	end
+	-- The Barn is a rested-beasts bonus rather than another flat habitat pad, so
+	-- buying it is felt everywhere rather than only in the display list.
+	local barn = data.plot.purchasedPads["beast_barn"] and (1 + PlotConfig.BARN_ESSENCE_BONUS) or 1
+
 	local rate = GameConfig.BASE_ESSENCE_PER_SECOND
 		* GameConfig.ALTAR_RATE_GROWTH ^ (data.altar.level - 1)
 		* self:_ascensionMult(data)
 		* self:_displayBoost(data)
+		* barn
 	-- external multipliers (gamepasses, timed boosts, premium)
 	rate *= Registry.MonetizationService:getEssenceMultiplier(player)
 	return rate

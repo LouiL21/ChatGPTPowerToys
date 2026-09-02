@@ -68,6 +68,10 @@ end)
 Remotes.event("OpenChamber").OnClientEvent:Connect(function()
 	UIController.openChamber()
 end)
+-- The Barn is where your beasts live, so walking up to it opens the roster.
+Remotes.event("OpenBarn").OnClientEvent:Connect(function()
+	UIController.open("Pets")
+end)
 
 -- Initial full-state pull, retried until the profile is loaded server-side.
 task.spawn(function()

@@ -52,7 +52,7 @@ local STEPS = {
 	{
 		glyph = "🏛️",
 		title = "Grow",
-		body = "Step on buy-pads to unlock nodes and habitat space. Upgrade the Altar for a faster rate. Nobody can rob your sanctuary.",
+		body = "Step on buy-pads to unlock nodes and habitat space, and build the Beast Barn at the back for more room and a bigger rate. Upgrade the Altar too. Nobody can rob your sanctuary.",
 	},
 }
 

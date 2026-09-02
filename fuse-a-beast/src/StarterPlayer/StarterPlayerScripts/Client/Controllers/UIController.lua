@@ -659,6 +659,7 @@ function UIController:_renderSanctuary()
 
 	-- Sanctuary capacity, so "why can't I display this beast" has an answer.
 	local slots = data.habitatSlots or PlotConfig.BASE_HABITAT_SLOTS
+	local hasBarn = ((data.plot or {}).purchasedPads or {})["beast_barn"] == true
 	UI.label(string.format("Sanctuary space: %d / %d beasts — buy Habitat pads on your plot for more.",
 		#(data.display or {}), slots), {
 		Size = UDim2.new(1, -8, 0, 34),
@@ -668,6 +669,28 @@ function UIController:_renderSanctuary()
 		LayoutOrder = 7,
 		Parent = body,
 	})
+
+	UI.label(
+		hasBarn
+				and string.format(
+					"Beast Barn built: +%d beasts housed and +%d%% essence.",
+					PlotConfig.BARN_HABITAT_SLOTS,
+					math.floor(PlotConfig.BARN_ESSENCE_BONUS * 100)
+				)
+			or string.format(
+				"Build the Beast Barn at the back of your plot: +%d beasts housed and +%d%% essence.",
+				PlotConfig.BARN_HABITAT_SLOTS,
+				math.floor(PlotConfig.BARN_ESSENCE_BONUS * 100)
+			),
+		{
+			Size = UDim2.new(1, -8, 0, 34),
+			TextSize = 12,
+			TextColor3 = hasBarn and Theme.green or Theme.goldLight,
+			TextWrapped = true,
+			LayoutOrder = 8,
+			Parent = body,
+		}
+	)
 end
 
 -- ── Beastdex ──────────────────────────────────────────────────────────────

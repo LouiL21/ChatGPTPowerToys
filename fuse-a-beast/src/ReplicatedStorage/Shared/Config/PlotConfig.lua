@@ -61,6 +61,7 @@ PlotConfig.NODE_MAX_TIER = 5
 -- ── Landmarks ─────────────────────────────────────────────────────────────
 PlotConfig.ALTAR_OFFSET = Vector3.new(0, 0, -52) -- Summoning Altar, back-centre
 PlotConfig.CHAMBER_OFFSET = Vector3.new(-54, 0, -50) -- Fusion Chamber, back-left
+PlotConfig.BARN_OFFSET = Vector3.new(52, 0, -50) -- Beast Barn, back-right
 PlotConfig.SPAWN_OFFSET = Vector3.new(0, 0, 62) -- where the owner is placed
 PlotConfig.SIGN_OFFSET = Vector3.new(0, 0, 72) -- nameplate at the plot entrance
 
@@ -98,13 +99,16 @@ PlotConfig.ORB_RARITY_MULT = {
 -- kind: "node" unlocks an element node · "nodeTier" upgrades all nodes
 --       "habitat" raises how many beasts can live on the plot
 --       "altar" raises the Altar level (fusion power / display slots)
--- kind "building" reveals a structure (currently the Fusion Chamber).
+-- kind "building" reveals a structure (the Fusion Chamber, the Beast Barn).
 --
 -- Ordering rule: the Chamber is pad ONE and deliberately cheap. Fusing two
 -- beasts is the whole game, so a new player has to reach it inside their first
 -- couple of minutes — anything later and they judge the game on the summon
 -- button alone. Habitat space is second for the same reason: somewhere to put
 -- what you catch matters before another element does.
+--
+-- After that, `order` follows COST, so walking the pad rows left to right is
+-- walking your way up the upgrade ladder. Two rows of six.
 PlotConfig.BuyPads = {
 	{ id = "fusion_chamber", order = 1, kind = "building", value = "chamber", cost = 250, label = "Fusion Chamber" },
 	{ id = "habitat_2", order = 2, kind = "habitat", value = 4, cost = 600, label = "Habitat +4" },
@@ -114,9 +118,13 @@ PlotConfig.BuyPads = {
 	{ id = "node_tier_2", order = 6, kind = "nodeTier", value = 2, cost = 9000, label = "Node Tier 2" },
 	{ id = "habitat_3", order = 7, kind = "habitat", value = 4, cost = 18000, label = "Habitat +4" },
 	{ id = "node_void", order = 8, kind = "node", element = "Void", cost = 40000, label = "Void Rift" },
-	{ id = "node_tier_3", order = 9, kind = "nodeTier", value = 3, cost = 90000, label = "Node Tier 3" },
-	{ id = "habitat_4", order = 10, kind = "habitat", value = 5, cost = 250000, label = "Habitat +5" },
-	{ id = "node_tier_4", order = 11, kind = "nodeTier", value = 4, cost = 800000, label = "Node Tier 4" },
+	-- The Barn is the mid-game landmark: the first purchase that changes the
+	-- plot's skyline rather than adding another crystal, and it pays in both room
+	-- and rate so it never feels like decoration bought by mistake.
+	{ id = "beast_barn", order = 9, kind = "building", value = "barn", cost = 60000, label = "Beast Barn" },
+	{ id = "node_tier_3", order = 10, kind = "nodeTier", value = 3, cost = 90000, label = "Node Tier 3" },
+	{ id = "habitat_4", order = 11, kind = "habitat", value = 5, cost = 250000, label = "Habitat +5" },
+	{ id = "node_tier_4", order = 12, kind = "nodeTier", value = 4, cost = 800000, label = "Node Tier 4" },
 }
 
 -- Pads are laid out in rows across the plot's front edge. One row of eleven made
@@ -128,6 +136,10 @@ PlotConfig.PAD_PER_ROW = 6
 PlotConfig.PAD_SIZE = 19 -- square pad footprint, studs
 PlotConfig.PAD_SPACING = 23
 PlotConfig.BASE_HABITAT_SLOTS = 6 -- beasts that can physically live on the plot
+
+-- What the Beast Barn is worth once built.
+PlotConfig.BARN_HABITAT_SLOTS = 5 -- extra beasts it houses
+PlotConfig.BARN_ESSENCE_BONUS = 0.25 -- +25% sanctuary essence: rested beasts produce more
 
 -- ── Rarity → physical presence ────────────────────────────────────────────
 -- The core flex: rarity is expressed as SIZE and light, visible across the map.
