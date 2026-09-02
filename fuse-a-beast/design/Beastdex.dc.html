@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #ffc44d; }
+    a:hover { color: #ffd782; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: radial-gradient(120% 50% at 50% 0%, #2a2150 0%, #16122b 45%, #0c0916 100%); font-family: Nunito, system-ui, sans-serif; color: #f4f1ff; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 18px 0 18px;">
+    <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-weight: 700; font-size: 26px;">Beastdex</span>
+    <div style="width: 38px; height: 38px; border-radius: 12px; border: 3px solid #0a0713; background: #241d45; box-shadow: 0 3px 0 #0a0713; display: flex; align-items: center; justify-content: center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M6 6 L18 18 M18 6 L6 18" stroke="#c3bade" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <div style="padding: 14px 18px 0 18px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px;">
+      <span style="font-size: 12px; font-weight: 800; color: #9c93bd; letter-spacing: 0.06em;">DISCOVERED</span>
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 15px; font-weight: 600; color: #ffd782;">24 / 68</span>
+    </div>
+    <div style="height: 14px; border-radius: 999px; background: #1a1533; border: 2px solid #0a0713; overflow: hidden;">
+      <div style="width: 35%; height: 100%; background: linear-gradient(90deg, #8b5cf6 0%, #f0468b 100%);"></div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 7px; padding: 16px 18px 0 18px;">
+    <div style="background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); border: 2px solid #0a0713; border-radius: 999px; padding: 6px 15px;">
+      <span style="font-size: 12px; font-weight: 800; color: #ffffff;">All</span>
+    </div>
+    <div style="background: #241d45; border: 2px solid #0a0713; border-radius: 999px; padding: 6px 15px;">
+      <span style="font-size: 12px; font-weight: 800; color: #f5b428;">Legendary</span>
+    </div>
+    <div style="background: #241d45; border: 2px solid #0a0713; border-radius: 999px; padding: 6px 15px;">
+      <span style="font-size: 12px; font-weight: 800; color: #f04678;">Mythic</span>
+    </div>
+    <div style="background: #241d45; border: 2px solid #0a0713; border-radius: 999px; padding: 6px 15px;">
+      <span style="font-size: 12px; font-weight: 800; color: #e6dcff;">Secret</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 16px 18px 0 18px;">
+
+    <div style="position: relative; height: 116px; border-radius: 16px; border: 3px solid #0a0713; background: linear-gradient(180deg, #2b2450 0%, #1d1839 100%); box-shadow: 0 3px 0 #0a0713, inset 0 0 0 2px rgba(240,70,120,0.55); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+      <div style="width: 54px; height: 54px; border-radius: 14px; background: radial-gradient(circle at 50% 35%, rgba(240,70,120,0.35) 0%, rgba(20,12,32,0.9) 75%); display: flex; align-items: center; justify-content: center;">
+        <svg width="34" height="34" viewBox="0 0 120 120" fill="none">
+          <path d="M60 20c-12 0-22 8-26 20-6 4-10 12-10 22 6-8 12-12 18-12-2 10 2 20 10 26 0-10 4-16 10-20 6 4 10 10 10 20 8-6 12-16 10-26 6 0 12 4 18 12 0-10-4-18-10-22-4-12-14-20-26-20Z" fill="rgba(240,70,120,0.28)" stroke="#ff9dc0" stroke-width="3.4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 11px; font-weight: 600; color: #ffffff; text-align: center; line-height: 1.1;">Solar Phoenix</span>
+      <span style="font-size: 9px; font-weight: 800; color: #f04678; letter-spacing: 0.08em;">MYTHIC</span>
+      <div style="position: absolute; top: 6px; right: 6px; background: #0a0713; border-radius: 999px; padding: 1px 6px;">
+        <span style="font-size: 10px; font-weight: 800; color: #ffd782;">&times;3</span>
+      </div>
+    </div>
+
+    <div style="position: relative; height: 116px; border-radius: 16px; border: 3px solid #0a0713; background: linear-gradient(180deg, #2b2450 0%, #1d1839 100%); box-shadow: 0 3px 0 #0a0713, inset 0 0 0 2px rgba(245,180,40,0.55); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+      <div style="width: 54px; height: 54px; border-radius: 14px; background: radial-gradient(circle at 50% 35%, rgba(245,180,40,0.32) 0%, rgba(20,12,32,0.9) 75%); display: flex; align-items: center; justify-content: center;">
+        <svg width="34" height="34" viewBox="0 0 120 120" fill="none">
+          <path d="M26 76c0-22 14-38 34-38s34 14 34 32c0 12-8 20-18 20-8 0-14-4-16-10-4 8-12 12-20 12-8 0-14-6-14-16Z" fill="rgba(245,180,40,0.26)" stroke="#ffd782" stroke-width="3.4" stroke-linejoin="round"/>
+          <path d="M44 34l8 10M76 34l-8 10" stroke="#ffd782" stroke-width="3.4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 11px; font-weight: 600; color: #ffffff; text-align: center; line-height: 1.1;">Tempest Drake</span>
+      <span style="font-size: 9px; font-weight: 800; color: #f5b428; letter-spacing: 0.08em;">LEGENDARY</span>
+      <div style="position: absolute; top: 6px; right: 6px; background: #0a0713; border-radius: 999px; padding: 1px 6px;">
+        <span style="font-size: 10px; font-weight: 800; color: #ffd782;">&times;1</span>
+      </div>
+    </div>
+
+    <div style="position: relative; height: 116px; border-radius: 16px; border: 3px solid #0a0713; background: linear-gradient(180deg, #2b2450 0%, #1d1839 100%); box-shadow: 0 3px 0 #0a0713, inset 0 0 0 2px rgba(170,90,240,0.55); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+      <div style="width: 54px; height: 54px; border-radius: 14px; background: radial-gradient(circle at 50% 35%, rgba(170,90,240,0.32) 0%, rgba(20,12,32,0.9) 75%); display: flex; align-items: center; justify-content: center;">
+        <svg width="34" height="34" viewBox="0 0 120 120" fill="none">
+          <path d="M60 24c16 0 28 14 28 32s-12 40-28 40-28-22-28-40 12-32 28-32Z" fill="rgba(170,90,240,0.26)" stroke="#d6a9ff" stroke-width="3.4" stroke-linejoin="round"/>
+          <circle cx="50" cy="52" r="4" fill="#d6a9ff"/><circle cx="70" cy="52" r="4" fill="#d6a9ff"/>
+        </svg>
+      </div>
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 11px; font-weight: 600; color: #ffffff; text-align: center; line-height: 1.1;">Drownwraith</span>
+      <span style="font-size: 9px; font-weight: 800; color: #aa5af0; letter-spacing: 0.08em;">EPIC</span>
+      <div style="position: absolute; top: 6px; right: 6px; background: #0a0713; border-radius: 999px; padding: 1px 6px;">
+        <span style="font-size: 10px; font-weight: 800; color: #ffd782;">&times;7</span>
+      </div>
+    </div>
+
+    <div style="position: relative; height: 116px; border-radius: 16px; border: 3px solid #0a0713; background: linear-gradient(180deg, #2b2450 0%, #1d1839 100%); box-shadow: 0 3px 0 #0a0713, inset 0 0 0 2px rgba(70,140,240,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+      <div style="width: 54px; height: 54px; border-radius: 14px; background: radial-gradient(circle at 50% 35%, rgba(70,140,240,0.3) 0%, rgba(20,12,32,0.9) 75%); display: flex; align-items: center; justify-content: center;">
+        <svg width="34" height="34" viewBox="0 0 120 120" fill="none">
+          <path d="M30 82c14 6 26-2 30-14 4-12 14-18 26-14-6-14-20-20-34-14S28 62 30 82Z" fill="rgba(70,140,240,0.26)" stroke="#a8d3ff" stroke-width="3.4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 11px; font-weight: 600; color: #ffffff; text-align: center; line-height: 1.1;">Steam Serpent</span>
+      <span style="font-size: 9px; font-weight: 800; color: #468cf0; letter-spacing: 0.08em;">RARE</span>
+      <div style="position: absolute; top: 6px; right: 6px; background: #0a0713; border-radius: 999px; padding: 1px 6px;">
+        <span style="font-size: 10px; font-weight: 800; color: #ffd782;">&times;12</span>
+      </div>
+    </div>
+
+    <div style="position: relative; height: 116px; border-radius: 16px; border: 3px solid #0a0713; background: linear-gradient(180deg, #2b2450 0%, #1d1839 100%); box-shadow: 0 3px 0 #0a0713, inset 0 0 0 2px rgba(90,200,100,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+      <div style="width: 54px; height: 54px; border-radius: 14px; background: radial-gradient(circle at 50% 35%, rgba(90,200,100,0.3) 0%, rgba(20,12,32,0.9) 75%); display: flex; align-items: center; justify-content: center;">
+        <svg width="34" height="34" viewBox="0 0 120 120" fill="none">
+          <path d="M60 26c14 0 26 12 26 28s-12 40-26 40-26-24-26-40 12-28 26-28Z" fill="rgba(90,200,100,0.26)" stroke="#a9edb1" stroke-width="3.4" stroke-linejoin="round"/>
+          <path d="M60 26c0-8 6-12 12-12" stroke="#a9edb1" stroke-width="3.4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 11px; font-weight: 600; color: #ffffff; text-align: center; line-height: 1.1;">Sproutkin</span>
+      <span style="font-size: 9px; font-weight: 800; color: #5ac864; letter-spacing: 0.08em;">COMMON</span>
+      <div style="position: absolute; top: 6px; right: 6px; background: #0a0713; border-radius: 999px; padding: 1px 6px;">
+        <span style="font-size: 10px; font-weight: 800; color: #ffd782;">&times;41</span>
+      </div>
+    </div>
+
+    <div style="position: relative; height: 116px; border-radius: 16px; border: 3px solid #0a0713; background: linear-gradient(150deg, #3a2b5e 0%, #1d1839 55%, #33254f 100%); box-shadow: 0 3px 0 #0a0713, inset 0 0 0 2px rgba(255,255,255,0.5), 0 0 22px rgba(255,255,255,0.14); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+      <div style="width: 54px; height: 54px; border-radius: 14px; background: conic-gradient(from 40deg, rgba(240,70,120,0.4), rgba(255,196,77,0.4), rgba(90,217,240,0.4), rgba(139,92,246,0.4), rgba(240,70,120,0.4)); display: flex; align-items: center; justify-content: center;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3 L14.6 9.4 L21 12 L14.6 14.6 L12 21 L9.4 14.6 L3 12 L9.4 9.4 Z" fill="#ffffff"/>
+        </svg>
+      </div>
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 11px; font-weight: 600; color: #ffffff; text-align: center; line-height: 1.1;">Chronodragon</span>
+      <span style="font-size: 9px; font-weight: 800; color: #ffffff; letter-spacing: 0.08em;">SECRET</span>
+      <div style="position: absolute; top: 6px; right: 6px; background: #0a0713; border-radius: 999px; padding: 1px 6px;">
+        <span style="font-size: 10px; font-weight: 800; color: #ffd782;">&times;1</span>
+      </div>
+    </div>
+
+    <div style="height: 116px; border-radius: 16px; border: 3px solid #0a0713; background: #15112a; box-shadow: 0 3px 0 #0a0713; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 30px; font-weight: 700; color: #2f2851;">?</span>
+      <span style="font-size: 9px; font-weight: 800; color: #468cf0; letter-spacing: 0.08em;">RARE</span>
+    </div>
+
+    <div style="height: 116px; border-radius: 16px; border: 3px solid #0a0713; background: #15112a; box-shadow: 0 3px 0 #0a0713; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 30px; font-weight: 700; color: #2f2851;">?</span>
+      <span style="font-size: 9px; font-weight: 800; color: #f5b428; letter-spacing: 0.08em;">LEGENDARY</span>
+    </div>
+
+    <div style="height: 116px; border-radius: 16px; border: 3px solid #0a0713; background: #15112a; box-shadow: 0 3px 0 #0a0713; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 30px; font-weight: 700; color: #2f2851;">?</span>
+      <span style="font-size: 9px; font-weight: 800; color: #aa5af0; letter-spacing: 0.08em;">EPIC</span>
+    </div>
+
+  </div>
+
+  <div style="margin-top: auto; padding: 0 18px 22px 18px;">
+    <div style="display: flex; align-items: center; gap: 12px; background: linear-gradient(180deg, #2f2757 0%, #241d45 100%); border: 3px solid #0a0713; border-radius: 17px; padding: 13px 16px; box-shadow: 0 4px 0 #0a0713;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M12 3.5 L19 11 h-4v9.5H9V11H5Z" fill="rgba(255,196,77,0.2)" stroke="#ffc44d" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+      <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+        <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 14px; font-weight: 600; color: #ffffff;">Sanctuary boost</span>
+        <span style="font-size: 11px; font-weight: 700; color: #9c93bd;">3 beasts on display &middot; +48% essence</span>
+      </div>
+      <span style="font-family: Fredoka, 'Trebuchet MS', sans-serif; font-size: 19px; font-weight: 700; color: #ffd782;">+48%</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
