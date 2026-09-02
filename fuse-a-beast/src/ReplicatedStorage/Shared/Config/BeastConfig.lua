@@ -124,6 +124,23 @@ BeastConfig.List = {
 	{ id = "pumpkinking", name = "Pumpkin King", rarity = "Legendary", elements = { "Nature", "Void" }, event = "harvest_moon" },
 	-- Winter Freeze
 	{ id = "frostfangalpha", name = "Frostfang Alpha", rarity = "Secret", elements = { "Water", "Air" }, event = "winter_freeze" },
+
+	-- Wave 3: written for the crab and dragon body plans. Element ORDER matters —
+	-- the first element picks the plan, so a Water-first beast can come out a
+	-- crab where a Fire-first one comes out a dragon.
+	{ id = "shalecrab", name = "Shalecrab", rarity = "Common", elements = { "Earth" } },
+	{ id = "brinenipper", name = "Brine Nipper", rarity = "Common", elements = { "Water" } },
+	{ id = "wyrmling", name = "Wyrmling", rarity = "Uncommon", elements = { "Fire" } },
+	{ id = "reefguard", name = "Reefguard", rarity = "Uncommon", elements = { "Water", "Earth" } },
+	{ id = "thornscuttle", name = "Thornscuttle", rarity = "Rare", elements = { "Nature", "Earth" } },
+	{ id = "cindercrawler", name = "Cindercrawler", rarity = "Rare", elements = { "Earth", "Fire" } },
+	{ id = "gildedwyrm", name = "Gilded Wyrm", rarity = "Epic", elements = { "Fire", "Earth" } },
+	{ id = "tidalcarapace", name = "Tidal Carapace", rarity = "Epic", elements = { "Water", "Air" } },
+	{ id = "stormdrake", name = "Stormdrake", rarity = "Legendary", elements = { "Air", "Water" } },
+	{ id = "magmadrake", name = "Magmadrake", rarity = "Legendary", elements = { "Fire", "Nature" } },
+	{ id = "voidwyrm", name = "Void Wyrm", rarity = "Mythic", elements = { "Void", "Air" } },
+	{ id = "abyssalmonarch", name = "Abyssal Monarch", rarity = "Mythic", elements = { "Water", "Void" } },
+	{ id = "worldshellbearer", name = "Worldshell Bearer", rarity = "Secret", elements = { "Earth", "Water", "Nature" } },
 	-- New Year
 	{ id = "fireworksphoenix", name = "Fireworks Phoenix", rarity = "Mythic", elements = { "Fire", "Air" }, event = "new_year" },
 }

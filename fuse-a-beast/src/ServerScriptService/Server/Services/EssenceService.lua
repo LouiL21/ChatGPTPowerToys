@@ -82,12 +82,14 @@ function EssenceService:getRate(player: Player): number
 	-- The Barn is a rested-beasts bonus rather than another flat habitat pad, so
 	-- buying it is felt everywhere rather than only in the display list.
 	local barn = data.plot.purchasedPads["beast_barn"] and (1 + PlotConfig.BARN_ESSENCE_BONUS) or 1
+	local house = data.plot.purchasedPads["cottage"] and (1 + PlotConfig.HOUSE_ESSENCE_BONUS) or 1
 
 	local rate = GameConfig.BASE_ESSENCE_PER_SECOND
 		* GameConfig.ALTAR_RATE_GROWTH ^ (data.altar.level - 1)
 		* self:_ascensionMult(data)
 		* self:_displayBoost(data)
 		* barn
+		* house
 	-- external multipliers (gamepasses, timed boosts, premium)
 	rate *= Registry.MonetizationService:getEssenceMultiplier(player)
 	return rate

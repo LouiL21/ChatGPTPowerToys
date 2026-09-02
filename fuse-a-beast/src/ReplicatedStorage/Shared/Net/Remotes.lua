@@ -41,6 +41,7 @@ Remotes.ServerEvents = {
 	"OpenFusion", -- player activated the Altar; client opens the summon panel
 	"OpenChamber", -- player activated the Fusion Chamber
 	"OpenBarn", -- player activated the Beast Barn
+	"OpenHouse", -- player activated their Cottage
 	"BattleEvent", -- streamed turn-by-turn battle updates
 	"DuelChallenge", -- someone challenged you to a duel
 }

@@ -61,7 +61,7 @@ PlotConfig.COLORS = {
 -- Nodes hug the side walls, leaving the middle of the plot clear for the
 -- habitat. Crowding them inward is what made the sanctuary feel packed.
 PlotConfig.Nodes = {
-	{ element = "Fire", offset = Vector3.new(-58, 0, -22), unlockedByDefault = true },
+	{ element = "Fire", offset = Vector3.new(-66, 0, -32), unlockedByDefault = true },
 	{ element = "Water", offset = Vector3.new(58, 0, -22), unlockedByDefault = true },
 	{ element = "Earth", offset = Vector3.new(-63, 0, 6), unlockedByDefault = false },
 	{ element = "Air", offset = Vector3.new(63, 0, 6), unlockedByDefault = false },
@@ -77,6 +77,7 @@ PlotConfig.NODE_MAX_TIER = 5
 PlotConfig.ALTAR_OFFSET = Vector3.new(0, 0, -52) -- Summoning Altar, back-centre
 PlotConfig.CHAMBER_OFFSET = Vector3.new(-54, 0, -50) -- Fusion Chamber, back-left
 PlotConfig.BARN_OFFSET = Vector3.new(52, 0, -50) -- Beast Barn, back-right
+PlotConfig.HOUSE_OFFSET = Vector3.new(-42, 0, -16) -- your Cottage, mid-left
 -- Clear of the front pad row, so arriving home never lands you on a buy-pad.
 PlotConfig.SPAWN_OFFSET = Vector3.new(0, 0, 70) -- where the owner is placed
 PlotConfig.SIGN_OFFSET = Vector3.new(0, 0, 74) -- nameplate at the plot entrance
@@ -85,7 +86,7 @@ PlotConfig.SIGN_OFFSET = Vector3.new(0, 0, 74) -- nameplate at the plot entrance
 -- grow with the slot count or a full sanctuary reads as a pile rather than a
 -- collection you can walk through.
 PlotConfig.HABITAT_CENTRE = Vector3.new(0, 0, -4)
-PlotConfig.HABITAT_RADIUS = 46
+PlotConfig.HABITAT_RADIUS = 40
 
 -- ── Pickups ───────────────────────────────────────────────────────────────
 PlotConfig.MAX_PICKUPS_PER_PLOT = 28 -- hard cap: keeps part count (and lag) bounded
@@ -128,19 +129,23 @@ PlotConfig.ORB_RARITY_MULT = {
 PlotConfig.BuyPads = {
 	{ id = "fusion_chamber", order = 1, kind = "building", value = "chamber", cost = 250, label = "Fusion Chamber" },
 	{ id = "habitat_2", order = 2, kind = "habitat", value = 4, cost = 600, label = "Habitat +4" },
-	{ id = "node_earth", order = 3, kind = "node", element = "Earth", cost = 900, label = "Earth Node" },
-	{ id = "node_air", order = 4, kind = "node", element = "Air", cost = 2000, label = "Air Node" },
-	{ id = "node_nature", order = 5, kind = "node", element = "Nature", cost = 5000, label = "Nature Node" },
-	{ id = "node_tier_2", order = 6, kind = "nodeTier", value = 2, cost = 9000, label = "Node Tier 2" },
-	{ id = "habitat_3", order = 7, kind = "habitat", value = 4, cost = 18000, label = "Habitat +4" },
-	{ id = "node_void", order = 8, kind = "node", element = "Void", cost = 40000, label = "Void Rift" },
+	-- The Cottage is early and cheap on purpose: it is the first thing you BUILD
+	-- rather than unlock, and a plot with a house on it stops looking like a test
+	-- level about ninety seconds into the game.
+	{ id = "cottage", order = 3, kind = "building", value = "house", cost = 1200, label = "Your Cottage" },
+	{ id = "node_earth", order = 4, kind = "node", element = "Earth", cost = 1600, label = "Earth Node" },
+	{ id = "node_air", order = 5, kind = "node", element = "Air", cost = 3000, label = "Air Node" },
+	{ id = "node_nature", order = 6, kind = "node", element = "Nature", cost = 6000, label = "Nature Node" },
+	{ id = "node_tier_2", order = 7, kind = "nodeTier", value = 2, cost = 9000, label = "Node Tier 2" },
+	{ id = "habitat_3", order = 8, kind = "habitat", value = 4, cost = 14000, label = "Habitat +4" },
 	-- The Barn is the mid-game landmark: the first purchase that changes the
 	-- plot's skyline rather than adding another crystal, and it pays in both room
 	-- and rate so it never feels like decoration bought by mistake.
-	{ id = "beast_barn", order = 9, kind = "building", value = "barn", cost = 60000, label = "Beast Barn" },
-	{ id = "node_tier_3", order = 10, kind = "nodeTier", value = 3, cost = 90000, label = "Node Tier 3" },
-	{ id = "habitat_4", order = 11, kind = "habitat", value = 5, cost = 250000, label = "Habitat +5" },
-	{ id = "node_tier_4", order = 12, kind = "nodeTier", value = 4, cost = 800000, label = "Node Tier 4" },
+	{ id = "beast_barn", order = 9, kind = "building", value = "barn", cost = 22000, label = "Beast Barn" },
+	{ id = "node_void", order = 10, kind = "node", element = "Void", cost = 40000, label = "Void Rift" },
+	{ id = "node_tier_3", order = 11, kind = "nodeTier", value = 3, cost = 90000, label = "Node Tier 3" },
+	{ id = "habitat_4", order = 12, kind = "habitat", value = 5, cost = 250000, label = "Habitat +5" },
+	{ id = "node_tier_4", order = 13, kind = "nodeTier", value = 4, cost = 800000, label = "Node Tier 4" },
 }
 
 -- Pads are laid out in rows across the plot's front edge. One row of eleven made
@@ -148,14 +153,18 @@ PlotConfig.BuyPads = {
 -- bigger pad is easier to hit on mobile and gives the label room to breathe.
 PlotConfig.PAD_ROW_Z = 62 -- plot-local Z of the FRONT pad row
 PlotConfig.PAD_ROW_GAP = 25 -- distance between pad rows (rows march toward the altar)
-PlotConfig.PAD_PER_ROW = 6
-PlotConfig.PAD_SIZE = 19 -- square pad footprint, studs
-PlotConfig.PAD_SPACING = 23
+PlotConfig.PAD_PER_ROW = 7
+PlotConfig.PAD_SIZE = 18 -- square pad footprint, studs
+PlotConfig.PAD_SPACING = 21
 PlotConfig.BASE_HABITAT_SLOTS = 6 -- beasts that can physically live on the plot
 
 -- What the Beast Barn is worth once built.
 PlotConfig.BARN_HABITAT_SLOTS = 5 -- extra beasts it houses
 PlotConfig.BARN_ESSENCE_BONUS = 0.25 -- +25% sanctuary essence: rested beasts produce more
+
+-- The Cottage is yours rather than the beasts'. It pays a smaller, earlier
+-- bonus, so the two buildings never feel like the same purchase twice.
+PlotConfig.HOUSE_ESSENCE_BONUS = 0.15
 
 -- ── Rarity → physical presence ────────────────────────────────────────────
 -- The core flex: rarity is expressed as SIZE and light, visible across the map.

@@ -12,10 +12,14 @@
 
 	2. SPECIES HAVE SILHOUETTES. Every beast used to be the same quadruped with
 	   jittered dimensions, so a Beastdex of 68 creatures read as one creature in
-	   68 colours. Each species now resolves to a body PLAN — serpent, avian,
-	   golem, wisp, brute or quadruped — chosen from its primary element with a
-	   deterministic split, so a Fire beast and a Void beast are different animals
-	   at a glance, not different palettes.
+	   68 colours. Each species now resolves to a body PLAN — quadruped, serpent,
+	   avian, golem, wisp, brute, crab or dragon — chosen from its primary element
+	   with a deterministic split, so a Fire beast and a Void beast are different
+	   animals at a glance, not different palettes.
+
+	3. THEY LOOK BACK. Every plan has glowing neon eyes in its accent colour.
+	   It is the cheapest thing that turns an arrangement of parts into a
+	   creature, and the one feature every monster in this genre shares.
 
 	Every part is anchored and the model moves via PivotTo, so a plot full of
 	beasts costs no physics simulation.
@@ -46,18 +50,18 @@ local RARITY_COLOR = {
 }
 
 --[[
-	Body plans available to each element. The hash picks one of the two, so a
+	Body plans available to each element. The hash picks one of the three, so a
 	species always looks the same but siblings of one element still differ.
 	Air leans airborne, Earth leans heavy, Void leans incorporeal — the shape
 	tells you something true about the beast before you read its card.
 ]]
 local FORMS_BY_ELEMENT: { [string]: { string } } = {
-	Fire = { "quadruped", "brute" },
-	Water = { "serpent", "quadruped" },
-	Earth = { "golem", "brute" },
-	Air = { "avian", "wisp" },
-	Nature = { "quadruped", "avian" },
-	Void = { "wisp", "serpent" },
+	Fire = { "dragon", "quadruped", "brute" },
+	Water = { "serpent", "crab", "quadruped" },
+	Earth = { "golem", "crab", "brute" },
+	Air = { "avian", "dragon", "wisp" },
+	Nature = { "quadruped", "crab", "avian" },
+	Void = { "wisp", "dragon", "serpent" },
 }
 
 local function elementColor(elementId: string): Color3
@@ -84,8 +88,8 @@ end
 
 local function formFor(beast, seed: number): string
 	local options = FORMS_BY_ELEMENT[beast.elements[1]] or { "quadruped", "brute" }
-	-- Legendary+ single-element beasts get the more dramatic of the two plans,
-	-- so the top of the dex never looks like a bigger Common.
+	-- Legendary+ beasts always take the FIRST plan, which is the most dramatic
+	-- of the three, so the top of the dex never looks like a bigger Common.
 	if rarityIndexOf(beast.rarity) >= 5 then
 		return options[1]
 	end
@@ -144,23 +148,31 @@ local function animate(part: BasePart, role: string, phase: number, swing: numbe
 	return part
 end
 
--- Two eyes with pupils, used by every form that has a face.
-local function addEyes(model: Model, headSize: number, headY: number, headZ: number, spread: number)
+--[[
+	Two eyes, used by every form that has a face.
+
+	They GLOW. A neon eye in the creature's accent colour is the cheapest thing
+	that separates "a shape made of parts" from "a thing that is looking at you",
+	and it is the one feature every monster in the genre shares. The dark socket
+	behind it stops the glow reading as a floating dot.
+]]
+local function addEyes(model: Model, headSize: number, headY: number, headZ: number, spread: number, glow: Color3)
 	for _, side in ipairs({ -1, 1 }) do
 		piece(
 			model,
-			Vector3.new(headSize * 0.26, headSize * 0.26, headSize * 0.26),
-			Vector3.new(side * spread, headY + headSize * 0.12, headZ - headSize * 0.34),
-			Color3.fromRGB(250, 250, 255),
+			Vector3.new(headSize * 0.34, headSize * 0.3, headSize * 0.2),
+			Vector3.new(side * spread, headY + headSize * 0.12, headZ - headSize * 0.3),
+			Color3.fromRGB(16, 12, 24),
 			Enum.PartType.Ball
-		).Name = "Eye"
+		).Name = "Socket"
 		piece(
 			model,
-			Vector3.new(headSize * 0.13, headSize * 0.13, headSize * 0.13),
-			Vector3.new(side * spread, headY + headSize * 0.12, headZ - headSize * 0.44),
-			Color3.fromRGB(18, 14, 28),
-			Enum.PartType.Ball
-		).Name = "Pupil"
+			Vector3.new(headSize * 0.24, headSize * 0.22, headSize * 0.24),
+			Vector3.new(side * spread, headY + headSize * 0.12, headZ - headSize * 0.4),
+			glow,
+			Enum.PartType.Ball,
+			Enum.Material.Neon
+		).Name = "Eye"
 	end
 end
 
@@ -222,7 +234,7 @@ local function buildQuadruped(model: Model, rng: Random, scale: number, primary:
 		).Name = "Ear"
 	end
 
-	addEyes(model, headSize, headY, headZ, headSize * 0.26)
+	addEyes(model, headSize, headY, headZ, headSize * 0.26, accent)
 
 	local legInsetX = bodyWidth * 0.32
 	local legInsetZ = bodyLength * 0.3
@@ -320,7 +332,7 @@ local function buildSerpent(model: Model, rng: Random, scale: number, primary: C
 	local head = piece(model, Vector3.new(headSize * 0.95, headSize * 0.8, headSize * 1.3), Vector3.new(0, headY, headZ), primary, Enum.PartType.Ball)
 	head.Name = "Head"
 	animate(head, "head", 0, 1.4)
-	addEyes(model, headSize, headY, headZ - headSize * 0.2, headSize * 0.24)
+	addEyes(model, headSize, headY, headZ - headSize * 0.2, headSize * 0.24, accent)
 
 	-- Jaw and a forked tongue: cheap, and it sells the silhouette.
 	animate(
@@ -399,7 +411,7 @@ local function buildAvian(model: Model, rng: Random, scale: number, primary: Col
 	local head = piece(model, Vector3.new(headSize, headSize, headSize), Vector3.new(0, headY, -headSize * 0.15), primary, Enum.PartType.Ball)
 	head.Name = "Head"
 	animate(head, "head", 0.5, 1.3)
-	addEyes(model, headSize, headY, -headSize * 0.15, headSize * 0.28)
+	addEyes(model, headSize, headY, -headSize * 0.15, headSize * 0.28, accent)
 
 	-- Beak: a real wedge, so it tapers to a point instead of ending in a slab.
 	piece(
@@ -622,7 +634,7 @@ local function buildWisp(model: Model, rng: Random, scale: number, primary: Colo
 	animate(core, "body", 0, 1.4)
 
 	-- Eyes float inside the shell — the only anchor for a face.
-	addEyes(model, coreSize, floatY, -coreSize * 0.1, coreSize * 0.24)
+	addEyes(model, coreSize, floatY, -coreSize * 0.1, coreSize * 0.24, accent)
 
 	-- Orbiting shards. Static positions; AmbienceService is not involved because
 	-- these move with the creature, not with the plot.
@@ -688,7 +700,7 @@ local function buildBrute(model: Model, rng: Random, scale: number, primary: Col
 	local head = piece(model, Vector3.new(headSize, headSize, headSize), Vector3.new(0, headY, -chestDepth * 0.12), primary, Enum.PartType.Ball)
 	head.Name = "Head"
 	animate(head, "head", 2.1, 0.8)
-	addEyes(model, headSize, headY, -chestDepth * 0.12, headSize * 0.26)
+	addEyes(model, headSize, headY, -chestDepth * 0.12, headSize * 0.26, accent)
 
 	-- Jaw tusks.
 	for _, side in ipairs({ -1, 1 }) do
@@ -759,6 +771,250 @@ local function buildBrute(model: Model, rng: Random, scale: number, primary: Col
 	return headY + headSize
 end
 
+
+--[[
+	Crab: wide, low and armoured, with two oversized claws. The only plan that is
+	broader than it is tall, so it reads instantly against everything else in a
+	habitat.
+]]
+local function buildCrab(model: Model, rng: Random, scale: number, primary: Color3, secondary: Color3, accent: Color3, rarityIndex: number): number
+	local shellW = rng:NextNumber(4.2, 5.2) * scale
+	local shellH = rng:NextNumber(1.8, 2.4) * scale
+	local legH = rng:NextNumber(1.4, 2.0) * scale
+	local bodyY = legH + shellH / 2
+
+	local shell = piece(model, Vector3.new(shellW, shellH, shellW * 0.8), Vector3.new(0, bodyY, 0), primary, Enum.PartType.Ball)
+	shell.Name = "Shell"
+	animate(shell, "body", 0, 0.7)
+	-- Armour plates across the back.
+	for i = -1, 1 do
+		piece(
+			model,
+			Vector3.new(shellW * 0.24, shellH * 0.5, shellW * 0.62),
+			Vector3.new(i * shellW * 0.26, bodyY + shellH * 0.42, 0),
+			secondary,
+			nil,
+			nil,
+			Vector3.new(0, 0, i * 0.2),
+			"wedge"
+		).Name = "Plate"
+	end
+
+	-- Eyes on stalks, since a crab has no head to put them on.
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(shellW * 0.08, shellH * 0.9, shellW * 0.08),
+			Vector3.new(side * shellW * 0.18, bodyY + shellH * 0.7, -shellW * 0.3),
+			secondary,
+			Enum.PartType.Cylinder
+		).Name = "Stalk"
+		piece(
+			model,
+			Vector3.new(shellW * 0.18, shellW * 0.18, shellW * 0.18),
+			Vector3.new(side * shellW * 0.18, bodyY + shellH * 1.15, -shellW * 0.3),
+			accent,
+			Enum.PartType.Ball,
+			Enum.Material.Neon
+		).Name = "Eye"
+	end
+
+	-- Claws: an upper arm plus a two-part pincer.
+	for _, side in ipairs({ -1, 1 }) do
+		animate(
+			piece(
+				model,
+				Vector3.new(shellW * 0.5, shellH * 0.55, shellW * 0.34),
+				Vector3.new(side * shellW * 0.62, bodyY, -shellW * 0.34),
+				secondary,
+				Enum.PartType.Ball
+			),
+			"leg",
+			side > 0 and 0 or math.pi,
+			0.6
+		).Name = "Arm"
+		for _, half in ipairs({ 1, -1 }) do
+			animate(
+				piece(
+					model,
+					Vector3.new(shellW * 0.34, shellH * 0.3, shellW * 0.5),
+					Vector3.new(side * shellW * 0.78, bodyY + half * shellH * 0.18, -shellW * 0.66),
+					primary,
+					nil,
+					nil,
+					Vector3.new(0, 0, half * 0.25),
+					"wedge"
+				),
+				"ear",
+				side * 1.2,
+				1.2
+			).Name = "Claw"
+		end
+	end
+
+	-- Six scuttling legs.
+	for _, side in ipairs({ -1, 1 }) do
+		for i = 1, 3 do
+			animate(
+				piece(
+					model,
+					Vector3.new(shellW * 0.09, legH, shellW * 0.09),
+					Vector3.new(side * shellW * 0.44, legH / 2, (i - 2) * shellW * 0.24),
+					secondary,
+					Enum.PartType.Cylinder
+				),
+				"leg",
+				i * 1.1 + (side > 0 and 0 or math.pi),
+				0.7
+			).Name = "Leg"
+		end
+	end
+
+	if rarityIndex >= 3 then
+		piece(
+			model,
+			Vector3.new(shellW * 0.6, shellH * 0.3, shellW * 0.6),
+			Vector3.new(0, bodyY + shellH * 0.6, 0),
+			accent,
+			Enum.PartType.Ball,
+			Enum.Material.Neon
+		).Name = "Core"
+	end
+
+	return bodyY + shellH * 1.4
+end
+
+--[[
+	Dragon: the showpiece plan. A quadruped body with a raised neck, a horned
+	head, spread wings and a spiked tail — the silhouette the top of the dex
+	should have.
+]]
+local function buildDragon(model: Model, rng: Random, scale: number, primary: Color3, secondary: Color3, accent: Color3, rarityIndex: number): number
+	local bodyLen = rng:NextNumber(4.6, 5.6) * scale
+	local bodyH = rng:NextNumber(2.6, 3.2) * scale
+	local bodyW = rng:NextNumber(2.6, 3.2) * scale
+	local legH = rng:NextNumber(2.0, 2.8) * scale
+	local bodyY = legH + bodyH / 2
+
+	local body = piece(model, Vector3.new(bodyW, bodyH, bodyLen), Vector3.new(0, bodyY, 0), primary, Enum.PartType.Ball)
+	body.Name = "Body"
+	animate(body, "body", 0)
+	piece(
+		model,
+		Vector3.new(bodyW * 0.8, bodyH * 0.5, bodyLen * 0.84),
+		Vector3.new(0, bodyY - bodyH * 0.28, 0),
+		primary:Lerp(Color3.new(1, 1, 1), 0.32),
+		Enum.PartType.Ball
+	).Name = "Belly"
+
+	-- Neck: three segments rising toward the head.
+	local neckZ = -bodyLen / 2
+	for i = 1, 3 do
+		local t = i / 3
+		animate(
+			piece(
+				model,
+				Vector3.new(bodyW * (0.5 - t * 0.12), bodyW * (0.5 - t * 0.12), bodyW * 0.6),
+				Vector3.new(0, bodyY + bodyH * 0.3 + t * bodyH * 0.8, neckZ - t * bodyW * 0.9),
+				primary,
+				Enum.PartType.Ball
+			),
+			"head",
+			t * 1.4,
+			t
+		).Name = "Neck"
+	end
+
+	local headSize = bodyW * 0.75
+	local headY = bodyY + bodyH * 1.2
+	local headZ = neckZ - bodyW * 1.2
+	local head = piece(model, Vector3.new(headSize * 0.85, headSize * 0.8, headSize * 1.4), Vector3.new(0, headY, headZ), primary, Enum.PartType.Ball)
+	head.Name = "Head"
+	animate(head, "head", 1.6, 1.3)
+	addEyes(model, headSize, headY, headZ - headSize * 0.3, headSize * 0.24, accent)
+
+	-- Snout and swept-back horns.
+	piece(model, Vector3.new(headSize * 0.5, headSize * 0.4, headSize * 0.5), Vector3.new(0, headY - headSize * 0.16, headZ - headSize * 0.8), secondary, Enum.PartType.Ball).Name =
+		"Snout"
+	for _, side in ipairs({ -1, 1 }) do
+		piece(
+			model,
+			Vector3.new(headSize * 0.18, headSize * 0.9, headSize * 0.22),
+			Vector3.new(side * headSize * 0.26, headY + headSize * 0.6, headZ + headSize * 0.2),
+			accent,
+			nil,
+			Enum.Material.Neon,
+			Vector3.new(-0.5, 0, side * 0.4),
+			"wedge"
+		).Name = "Horn"
+	end
+
+	-- Wings, always present: a dragon without them is just a big lizard.
+	for _, side in ipairs({ -1, 1 }) do
+		local wing = piece(
+			model,
+			Vector3.new(bodyW * 2.4, bodyH * 0.14, bodyLen * 0.9),
+			Vector3.new(side * bodyW * 1.4, bodyY + bodyH * 0.5, 0),
+			secondary,
+			nil,
+			Enum.Material.Neon,
+			Vector3.new(0, 0, side * 0.35),
+			"wedge"
+		)
+		wing.Name = "Wing"
+		wing.Transparency = 0.2
+		animate(wing, "wing", 0, side * 1.2)
+	end
+
+	-- Four legs, diagonals in phase.
+	for _, sx in ipairs({ -1, 1 }) do
+		for _, sz in ipairs({ -1, 1 }) do
+			animate(
+				piece(
+					model,
+					Vector3.new(bodyW * 0.26, legH, bodyW * 0.26),
+					Vector3.new(sx * bodyW * 0.34, legH / 2, sz * bodyLen * 0.3),
+					secondary,
+					Enum.PartType.Cylinder
+				),
+				"leg",
+				(sx * sz > 0) and 0 or math.pi
+			).Name = "Leg"
+		end
+	end
+
+	-- Tail with a run of spines.
+	for i = 1, 4 do
+		local t = i / 4
+		animate(
+			piece(
+				model,
+				Vector3.new(bodyW * (0.42 - t * 0.24), bodyW * (0.42 - t * 0.24), bodyLen * 0.3),
+				Vector3.new(0, bodyY - t * bodyH * 0.2, bodyLen / 2 + i * bodyLen * 0.22),
+				primary,
+				Enum.PartType.Ball
+			),
+			"tail",
+			t * 2,
+			t * 1.4
+		).Name = "Tail"
+		if rarityIndex >= 3 then
+			piece(
+				model,
+				Vector3.new(bodyW * 0.1, bodyW * 0.5, bodyW * 0.24),
+				Vector3.new(0, bodyY + bodyW * 0.24 - t * bodyH * 0.2, bodyLen / 2 + i * bodyLen * 0.22),
+				accent,
+				nil,
+				Enum.Material.Neon,
+				nil,
+				"wedge"
+			).Name = "Spine"
+		end
+	end
+
+	return headY + headSize
+end
+
 local BUILDERS: { [string]: (Model, Random, number, Color3, Color3, Color3, number) -> number } = {
 	quadruped = buildQuadruped,
 	serpent = buildSerpent,
@@ -766,6 +1022,8 @@ local BUILDERS: { [string]: (Model, Random, number, Color3, Color3, Color3, numb
 	golem = buildGolem,
 	wisp = buildWisp,
 	brute = buildBrute,
+	crab = buildCrab,
+	dragon = buildDragon,
 }
 
 --[[

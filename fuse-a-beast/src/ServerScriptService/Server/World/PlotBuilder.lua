@@ -51,6 +51,8 @@ export type PlotHandle = {
 	chamberPillar: BasePart,
 	barn: Model,
 	barnPost: BasePart,
+	house: Model,
+	housePost: BasePart,
 	sign: TextLabel,
 	nodes: { [string]: NodeHandle },
 	pads: { [string]: PadHandle },
@@ -151,6 +153,7 @@ local function buildScenery(model: Model, origin: CFrame, index: number)
 		{ point = PlotConfig.ALTAR_OFFSET, radius = 26 },
 		{ point = PlotConfig.CHAMBER_OFFSET, radius = 24 },
 		{ point = PlotConfig.BARN_OFFSET, radius = 34 },
+		{ point = PlotConfig.HOUSE_OFFSET, radius = 24 },
 		{ point = PlotConfig.SPAWN_OFFSET, radius = 18 },
 		-- Trees ring the habitat rather than filling it, so the beasts inside
 		-- stay the thing you look at.
@@ -358,6 +361,112 @@ local function buildChamber(model: Model, origin: CFrame): (Model, BasePart)
 	Build.label(core, "Fusion Chamber", Vector2.new(250, 50), 5, 95)
 
 	return chamber, pillar
+end
+
+--[[
+	Your Cottage — the first thing on the plot you BUILD rather than unlock.
+
+	Same construction rules as the Barn: plot-local CFrame throughout, and a
+	roof made of tilted slabs rather than wedges, because a WedgePart slopes
+	along its own Z and getting that backwards is what put a roof through the
+	floor once already.
+]]
+local function buildHouse(model: Model, origin: CFrame): (Model, BasePart)
+	local base = origin * CFrame.new(PlotConfig.HOUSE_OFFSET)
+	local house = Instance.new("Model")
+	house.Name = "Cottage"
+	house.Parent = model
+
+	local W, D, H = 22, 18, 11
+	local WALL = Color3.fromRGB(226, 214, 190)
+	local BEAM = Color3.fromRGB(92, 64, 48)
+	local ROOF = Color3.fromRGB(126, 68, 62)
+
+	local function slab(size: Vector3, offset: Vector3, color: Color3, material: Enum.Material?, name: string)
+		return Build.part({
+			size = size,
+			cframe = base * CFrame.new(offset),
+			color = color,
+			material = material or Enum.Material.Concrete,
+			name = name,
+			parent = house,
+		})
+	end
+
+	slab(Vector3.new(W + 3, 1.5, D + 3), Vector3.new(0, 0.75, 0), Color3.fromRGB(104, 98, 118), Enum.Material.Cobblestone, "Base")
+
+	-- Four walls; the front (+Z, facing the entrance) has a doorway gap.
+	local wallY = H / 2 + 1.5
+	slab(Vector3.new(1.4, H, D), Vector3.new(-W / 2, wallY, 0), WALL, nil, "Wall")
+	slab(Vector3.new(1.4, H, D), Vector3.new(W / 2, wallY, 0), WALL, nil, "Wall")
+	slab(Vector3.new(W, H, 1.4), Vector3.new(0, wallY, -D / 2), WALL, nil, "Wall")
+	for _, side in ipairs({ -1, 1 }) do
+		slab(Vector3.new(W / 2 - 3, H, 1.4), Vector3.new(side * (W / 4 + 1.5), wallY, D / 2), WALL, nil, "Wall")
+	end
+	slab(Vector3.new(6, H - 8, 1.4), Vector3.new(0, H - 2.5, D / 2), WALL, nil, "Wall") -- lintel
+
+	-- Timber framing: the detail that makes plaster read as a cottage.
+	for _, spec in ipairs({
+		{ size = Vector3.new(W + 2, 1, 1.6), offset = Vector3.new(0, 1.8, D / 2) },
+		{ size = Vector3.new(W + 2, 1, 1.6), offset = Vector3.new(0, H + 1.5, D / 2) },
+		{ size = Vector3.new(1.6, 1, D + 2), offset = Vector3.new(-W / 2, H + 1.5, 0) },
+		{ size = Vector3.new(1.6, 1, D + 2), offset = Vector3.new(W / 2, H + 1.5, 0) },
+	}) do
+		slab(spec.size, spec.offset, BEAM, Enum.Material.WoodPlanks, "Beam")
+	end
+
+	-- Warm windows. Named "Window" so the reveal keeps them translucent.
+	for _, offset in ipairs({
+		Vector3.new(-W / 2 - 0.2, 7, 4),
+		Vector3.new(-W / 2 - 0.2, 7, -4),
+		Vector3.new(W / 2 + 0.2, 7, 0),
+	}) do
+		local win = slab(Vector3.new(1, 5, 5), offset, Color3.fromRGB(255, 206, 128), Enum.Material.Neon, "Window")
+		win.Transparency = 0.35
+		Build.glow(win, Color3.fromRGB(255, 196, 110), 16, 1.2)
+	end
+
+	-- Pitched roof, two tilted slabs meeting at a ridge.
+	local eaveY = H + 1.5
+	local rise, run = 7, W / 2
+	local pitch = math.atan2(rise, run)
+	local slope = math.sqrt(run * run + rise * rise) + 2.5
+	for _, side in ipairs({ -1, 1 }) do
+		Build.part({
+			size = Vector3.new(slope, 1.2, D + 4),
+			cframe = base * CFrame.new(side * run / 2, eaveY + rise / 2, 0) * CFrame.Angles(0, 0, -side * pitch),
+			color = ROOF,
+			material = Enum.Material.Slate,
+			name = "Roof",
+			parent = house,
+		})
+	end
+	slab(Vector3.new(1.8, 1.4, D + 5), Vector3.new(0, eaveY + rise, 0), BEAM, Enum.Material.WoodPlanks, "Ridge")
+	for i = 1, 3 do
+		local t = (i - 0.5) / 3
+		slab(Vector3.new(W * (1 - t), rise / 3 + 0.2, 1.1), Vector3.new(0, eaveY + rise * t - rise / 6, -D / 2), WALL, nil, "Gable")
+	end
+
+	-- Chimney with a lit top.
+	slab(Vector3.new(4, 12, 4), Vector3.new(W / 2 - 4, eaveY + 4, -D / 4), Color3.fromRGB(118, 92, 84), Enum.Material.Brick, "Chimney")
+	local smoke = slab(Vector3.new(3, 1, 3), Vector3.new(W / 2 - 4, eaveY + 10.5, -D / 4), Color3.fromRGB(255, 150, 80), Enum.Material.Neon, "Hearth")
+	Build.glow(smoke, Color3.fromRGB(255, 140, 70), 12, 1)
+
+	-- Door post carries the prompt.
+	local post = slab(Vector3.new(2, 8, 2), Vector3.new(-W / 2 - 3, 5, D / 2 + 2), BEAM, Enum.Material.Wood, "HousePost")
+
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "HousePrompt"
+	prompt.ActionText = "Sanctuary"
+	prompt.ObjectText = "Your Cottage"
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 14
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = post
+
+	Build.label(post, "Your Cottage", Vector2.new(220, 46), 7, 80)
+
+	return house, post
 end
 
 --[[
@@ -655,6 +764,7 @@ function PlotBuilder.build(index: number, origin: CFrame, parent: Instance): Plo
 	local altar, altarCrystal = buildAltar(model, origin)
 	local chamber, chamberPillar = buildChamber(model, origin)
 	local barn, barnPost = buildBarn(model, origin)
+	local house, housePost = buildHouse(model, origin)
 
 	local nodes: { [string]: NodeHandle } = {}
 	for _, spec in ipairs(PlotConfig.Nodes) do
@@ -688,6 +798,8 @@ function PlotBuilder.build(index: number, origin: CFrame, parent: Instance): Plo
 		chamberPillar = chamberPillar,
 		barn = barn,
 		barnPost = barnPost,
+		house = house,
+		housePost = housePost,
 		sign = sign,
 		nodes = nodes,
 		pads = pads,

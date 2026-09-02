@@ -158,6 +158,7 @@ function PlotService:applyProgression(player: Player)
 	-- focused on summoning, and makes each purchase land as an event.
 	self:_reveal(handle.chamber, data.plot.purchasedPads["fusion_chamber"] == true, "PodGlass", 0.55)
 	self:_reveal(handle.barn, data.plot.purchasedPads["beast_barn"] == true, nil, 0)
+	self:_reveal(handle.house, data.plot.purchasedPads["cottage"] == true, "Window", 0.35)
 
 	handle.sign.Text = player.DisplayName .. "'s Sanctuary"
 end
@@ -240,6 +241,8 @@ function PlotService:_bindAltar(player: Player, handle)
 		"This is someone else's Chamber. Head home to fuse!")
 	bindPrompt(handle, handle.barnPost, "BarnPrompt", player, "OpenBarn",
 		"This is someone else's Barn. Head home to tend yours!")
+	bindPrompt(handle, handle.housePost, "HousePrompt", player, "OpenHouse",
+		"That's not your house! Head home.")
 end
 
 function PlotService:teleportHome(player: Player)

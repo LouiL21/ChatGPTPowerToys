@@ -72,6 +72,10 @@ end)
 Remotes.event("OpenBarn").OnClientEvent:Connect(function()
 	UIController.open("Pets")
 end)
+-- Your own house opens your sanctuary's books: rate, upgrades, capacity.
+Remotes.event("OpenHouse").OnClientEvent:Connect(function()
+	UIController.open("Sanctuary")
+end)
 
 -- Initial full-state pull, retried until the profile is loaded server-side.
 task.spawn(function()
