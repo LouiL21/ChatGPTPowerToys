@@ -98,6 +98,16 @@ local function raise(btn: GuiObject, color: Color3)
 	})
 	Components.corner(999, rim)
 
+	-- The drop shadow is a sibling, so inside a UIListLayout it would become a
+	-- layout item of its own and shove the row apart. Auto-layout parents get
+	-- the face without the lift.
+	local parent = btn.Parent
+	local autoLaidOut = parent
+		and (parent:FindFirstChildOfClass("UIListLayout") or parent:FindFirstChildOfClass("UIGridLayout")) ~= nil
+	if autoLaidOut then
+		return
+	end
+
 	local shadow = Create("Frame", {
 		Name = "Lift",
 		Size = btn.Size,
@@ -106,14 +116,13 @@ local function raise(btn: GuiObject, color: Color3)
 		BackgroundColor3 = Theme.stroke,
 		BorderSizePixel = 0,
 		ZIndex = btn.ZIndex - 1,
-		Parent = btn.Parent,
+		Parent = parent,
 	})
 	Components.corner(Theme.radiusSmall, shadow)
-	return shadow
 end
 
 -- Press = sink into its own shadow. Cheap, and it feels great.
-local function pressable(btn: TextButton, shadow: Frame?)
+local function pressable(btn: TextButton)
 	local basePosition = btn.Position
 	btn.MouseButton1Down:Connect(function()
 		btn.Position = basePosition + UDim2.fromOffset(0, Theme.pressDepth)
@@ -123,7 +132,6 @@ local function pressable(btn: TextButton, shadow: Frame?)
 	end
 	btn.MouseButton1Up:Connect(release)
 	btn.MouseLeave:Connect(release)
-	return shadow
 end
 
 -- Chunky button with press feedback.
@@ -146,28 +154,7 @@ function Components.button(text: string, color: Color3, props: { [string]: any }
 	end
 
 	local btn = Create("TextButton", merged) :: TextButton
-	-- Inside a UIListLayout the shadow would become a layout item of its own, so
-	-- only draw it for absolutely-positioned buttons.
-	local layoutParent = btn.Parent and (btn.Parent:FindFirstChildOfClass("UIListLayout")
-		or btn.Parent:FindFirstChildOfClass("UIGridLayout"))
-	if layoutParent then
-		Components.corner(Theme.radiusSmall, btn)
-		Components.stroke(btn, Theme.buttonStroke)
-		Components.gradient(btn, color:Lerp(Color3.new(1, 1, 1), 0.26), color:Lerp(Color3.new(0, 0, 0), 0.24))
-		local rim = Create("Frame", {
-			Name = "Rim",
-			Size = UDim2.new(1, -14, 0, 3),
-			Position = UDim2.fromOffset(7, 4),
-			BackgroundColor3 = Theme.rim,
-			BackgroundTransparency = 0.62,
-			BorderSizePixel = 0,
-			Parent = btn,
-		})
-		Components.corner(999, rim)
-	else
-		raise(btn, color)
-	end
-
+	raise(btn, color)
 	pressable(btn)
 	return btn
 end
@@ -192,20 +179,7 @@ function Components.navButton(glyph: string, text: string, color: Color3, props:
 	end
 
 	local btn = Create("TextButton", merged) :: TextButton
-	Components.corner(Theme.radiusSmall, btn)
-	Components.stroke(btn, Theme.buttonStroke)
-	Components.gradient(btn, color:Lerp(Color3.new(1, 1, 1), 0.28), color:Lerp(Color3.new(0, 0, 0), 0.26))
-
-	local rim = Create("Frame", {
-		Name = "Rim",
-		Size = UDim2.new(1, -16, 0, 3),
-		Position = UDim2.fromOffset(8, 4),
-		BackgroundColor3 = Theme.rim,
-		BackgroundTransparency = 0.6,
-		BorderSizePixel = 0,
-		Parent = btn,
-	})
-	Components.corner(999, rim)
+	raise(btn, color)
 
 	Components.label(glyph, {
 		Size = UDim2.new(1, 0, 0, 28),

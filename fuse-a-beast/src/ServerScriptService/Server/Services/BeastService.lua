@@ -81,7 +81,7 @@ function BeastService:refresh(player: Player)
 		end
 		-- display entries are { beastId, variant } pairs.
 		if typeof(item) == "table" and typeof(item.beastId) == "string" then
-			local model = BeastModelFactory.create(item.beastId, 1, item.variant)
+			local model = BeastModelFactory.create(item.beastId, item.variant)
 			if model then
 				local position = randomPointInHabitat(centre)
 				BeastModelFactory.pivot(model, CFrame.new(position))

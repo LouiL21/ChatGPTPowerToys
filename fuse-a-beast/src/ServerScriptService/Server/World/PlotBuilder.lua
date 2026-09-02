@@ -1,8 +1,13 @@
 --!strict
 --[[
 	PlotBuilder
-	Builds one player's Sanctuary: ground, rim, the Fusion Altar, element node
-	structures, tycoon buy-pads and the nameplate.
+	Builds one player's Sanctuary: ground, scenery, the Summoning Altar, the
+	Fusion Chamber, the Beast Barn, element nodes, tycoon buy-pads and the
+	entrance nameplate.
+
+	Buildings are always built and start hidden; PlotService:applyProgression
+	reveals the ones a player has bought. Building them up front means a purchase
+	is one property sweep rather than a spawn, so the plot never pops in.
 
 	Returns a handle holding references to the live parts so services can drive
 	them (unlock a node, light the altar, retitle the sign) without re-searching

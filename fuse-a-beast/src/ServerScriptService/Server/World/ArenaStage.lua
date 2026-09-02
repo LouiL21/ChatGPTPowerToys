@@ -51,7 +51,6 @@ type Side = {
 	phase: number,
 	lungeAt: number, -- os.clock() when the last lunge began (0 = none)
 	recoilAt: number,
-	health: number,
 	bar: Frame,
 	defeated: boolean,
 	fallAt: number,
@@ -134,7 +133,6 @@ local function makeSide(visual: Visual, base: CFrame, phase: number): Side
 		phase = phase,
 		lungeAt = 0,
 		recoilAt = 0,
-		health = visual.maxHealth,
 		bar = attachHealthBar(visual.model, visual.name, visual.color, height),
 		defeated = false,
 		fallAt = 0,
@@ -355,8 +353,6 @@ function ArenaStage:hit(attackerIsA: boolean, damage: number, crit: boolean, adv
 	attacker.lungeAt = os.clock()
 	defender.recoilAt = os.clock() + LUNGE_DURATION * 0.45 -- land the recoil on contact
 
-	self.a.health = aHealth
-	self.b.health = bHealth
 	self.a.bar.Size = UDim2.fromScale(math.clamp(aHealth / math.max(1, self.a.visual.maxHealth), 0, 1), 1)
 	self.b.bar.Size = UDim2.fromScale(math.clamp(bHealth / math.max(1, self.b.visual.maxHealth), 0, 1), 1)
 

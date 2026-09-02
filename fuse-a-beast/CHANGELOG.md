@@ -4,6 +4,40 @@ All notable changes to Fuse a Beast are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] — 2026-09-02
+
+### Added
+- **The Beast Barn**, a tycoon building at the back of every sanctuary. Pitched
+  roof, white trim, open doors, hay bales, paddock fence, warm light inside.
+  Every other landmark on a plot was a crystal or a slab, so one building that
+  is *not* glowing is what makes the glowing ones read as special. It houses
+  five more beasts and adds +25% essence, so it is felt everywhere rather than
+  only in the display list. Walking up opens the Pets roster.
+- Buy-pad `order` now follows cost, so walking the pad rows left to right walks
+  you up the upgrade ladder.
+
+### Changed
+- **Beasts are animated.** Pieces carry an animation role, phase and swing
+  amplitude; legs stride, wings flap, tails sway, heads nod off-rhythm, serpent
+  segments carry one travelling wave and wisp shards orbit. Diagonal quadruped
+  legs share a phase so the gait reads as a trot; heavy plans swing less, so a
+  golem trudges where a bird strides. Idle motion never fully stops. Cost is
+  unchanged — the same single pass that already rebuilt every part's CFrame.
+- **Beasts look better.** `Build.part` gained wedge support, so beaks, ears,
+  horns, fins, wings and wisp shards taper instead of ending in slabs.
+  Quadrupeds and avians gained counter-shaded undersides; quadrupeds gained
+  paws and a bright tail tip that makes the sway readable at distance.
+- **Buttons read as buttons.** `Theme.panelLight` was doing double duty as a
+  panel tint and a neutral button fill, so half the menu was nearly the same
+  colour as the surface behind it. It is now a dedicated button fill, and every
+  pressable control gained a heavier outline, a gradient, a hard shadow and a
+  light rim along its top edge. Nav buttons are larger and sit on a dark tray.
+
+### Removed
+- Dead `level` parameter on `BeastModelFactory.create` (a v0.1 merge-level
+  leftover), an unread `health` field on `ArenaStage`, and a duplicated
+  hide-until-bought loop now shared by the Chamber and the Barn.
+
 ## [0.3.6] — 2026-08-30
 
 ### Added

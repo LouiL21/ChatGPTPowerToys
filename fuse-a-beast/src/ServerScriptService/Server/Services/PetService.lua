@@ -77,7 +77,7 @@ function PetService:refresh(player: Player)
 		data.activePet = { beastId = beastId, variant = variant }
 	end
 
-	local model = BeastModelFactory.create(beastId, 1, variant)
+	local model = BeastModelFactory.create(beastId, variant)
 	if not model then
 		return
 	end

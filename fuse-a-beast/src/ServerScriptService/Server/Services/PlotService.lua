@@ -60,7 +60,6 @@ function PlotService:isOnPlot(player: Player, position: Vector3): boolean
 	return math.abs(local_.X) <= half and math.abs(local_.Z) <= half
 end
 
--- Apply saved progression to the plot's geometry.
 --[[
 	Paints one buy-pad for its state. Single source of truth for pad appearance
 	so the build-time pass and the affordability sweep can never disagree.

@@ -2,11 +2,11 @@
 --[[
 	UIController
 	Builds and drives the interface: a compact HUD plus modal panels for Summon,
-	Chamber, Beastdex, Pets, Arena, Quests and Shop.
+	Chamber, Sanctuary, Beastdex, Pets, Arena, Quests and Shop.
 
 	Two principles carried over from the design pass:
-	  1. The world is the way in. Summon and Chamber open by walking up to the
-	     building; the HUD stays small so you can actually see the game.
+	  1. The world is the way in. The Altar, Chamber and Barn all open by walking
+	     up to the building; the HUD stays small so you can see the game.
 	  2. Everything is chunky and tactile (Components), because a flat dark
 	     dashboard is what made the first build feel like a menu, not a game.
 

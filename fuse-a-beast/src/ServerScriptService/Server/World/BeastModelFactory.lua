@@ -773,7 +773,7 @@ local BUILDERS: { [string]: (Model, Random, number, Color3, Color3, Color3, numb
 	attribute; `BeastModelFactory.pivot` re-places them, which keeps movement a
 	single cheap loop over parts rather than a weld/physics tree.
 ]]
-function BeastModelFactory.create(beastId: string, level: number?, variantId: string?): Model?
+function BeastModelFactory.create(beastId: string, variantId: string?): Model?
 	local beast = BeastConfig.ById[beastId]
 	if not beast then
 		return nil

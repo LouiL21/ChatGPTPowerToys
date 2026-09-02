@@ -18,9 +18,9 @@ export type PartOptions = {
 	canCollide: boolean?,
 	transparency: number?,
 	shape: Enum.PartType?,
-	-- "wedge" and "corner" build WedgePart / CornerWedgePart instead of a Part.
-	-- Sloped faces are the cheapest way out of the everything-is-a-box look:
-	-- roofs, beaks, fins and tail spikes all need a taper.
+	-- "wedge" builds a WedgePart instead of a Part. Sloped faces are the cheapest
+	-- way out of the everything-is-a-box look: barn roofs, beaks, fins and tail
+	-- spikes all need a taper.
 	kind: string?,
 	name: string?,
 	parent: Instance?,
@@ -31,8 +31,6 @@ function Build.part(options: PartOptions): BasePart
 	local part: BasePart
 	if options.kind == "wedge" then
 		part = Instance.new("WedgePart")
-	elseif options.kind == "corner" then
-		part = Instance.new("CornerWedgePart")
 	elseif options.shape then
 		local shaped = Instance.new("Part")
 		shaped.Shape = options.shape

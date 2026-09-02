@@ -71,11 +71,14 @@ cadence sustainable.
   — a boss ladder plus consensual player duels. Power comes only from what you
   collected and fused, never from the shop.
 - **Tycoon progression:** step on a buy-pad, pay essence, and your sanctuary
-  physically grows — new element nodes, faster node tiers, more habitat space.
+  physically grows — new element nodes, faster node tiers, more habitat space,
+  the Fusion Chamber, and the **Beast Barn** that houses your collection and
+  raises your rate.
 - **Creatures that live in the world:** every species resolves to its own body
   plan — quadruped, serpent, avian, golem, wisp or brute — chosen from its
-  primary element, then scaled and lit by rarity. Anchored and driven by one
-  shared loop, so a full island costs no physics.
+  primary element, then scaled and lit by rarity. They walk, flap, sway and
+  breathe, all from one shared loop over anchored parts, so a full island costs
+  no physics.
 - **Idle engine** with true **offline earnings** (capped, gamepass-extendable) —
   active play pays ~40% more, but stepping away is still rewarded.
 - **Discovery-fusion** engine: 6 elements, 68 beasts across 7 rarities
@@ -129,13 +132,15 @@ fuse-a-beast/
 
 ## Status & roadmap
 
-**v0.2 (this repo):** the 3D sanctuary tycoon — procedural island, plots,
-physical shard/essence collection, walk-up Fusion Altar, wandering beasts scaled
-by rarity, tycoon buy-pads, plus the full v0.1 backend (fusion engine, economy,
-offline earnings, quests, dailies, monetization, analytics, anti-exploit).
+**v0.4 (this repo):** the full loop — procedural island and plots, physical
+shard/essence collection with magnet pickup, walk-up Altar / Fusion Chamber /
+Beast Barn, six animated body plans scaled by rarity, pets that follow you, a
+ten-boss Arena with a staged physical fight, tycoon buy-pads, and the whole
+backend (fusion engine, economy, offline earnings, quests, dailies,
+monetization, analytics, anti-exploit).
 
-**Next:** Arena events (v0.3) → sanctuary decoration cosmetics + visiting rewards
-(v0.4) → trading. Weekly beast/recipe drops throughout. See the GDD.
+**Next:** sanctuary decoration cosmetics + visiting rewards → trading → Arena
+seasons. Weekly beast/recipe drops throughout. See the GDD.
 
 ## License
 
