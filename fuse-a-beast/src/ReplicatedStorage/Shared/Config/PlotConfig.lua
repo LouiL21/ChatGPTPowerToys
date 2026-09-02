@@ -87,12 +87,25 @@ PlotConfig.SIGN_OFFSET = Vector3.new(0, 0, 74) -- nameplate at the plot entrance
 -- collection you can walk through.
 PlotConfig.HABITAT_CENTRE = Vector3.new(0, 0, -4)
 PlotConfig.HABITAT_RADIUS = 40
+-- How far a beast strays from its OWN patch. Small on purpose: beasts that each
+-- roam the whole habitat inevitably bunch up in the middle.
+PlotConfig.BEAST_ROAM_RADIUS = 7
 
 -- ── Pickups ───────────────────────────────────────────────────────────────
-PlotConfig.MAX_PICKUPS_PER_PLOT = 28 -- hard cap: keeps part count (and lag) bounded
+--[[
+	Pickup density.
+
+	A full sanctuary is fifteen beasts each dropping an orb, and at a nine-second
+	interval that is well over one new glowing part per second — the plot filled
+	with litter faster than anyone could walk it. The interval is now longer and
+	each orb is worth proportionally more, so INCOME IS UNCHANGED (an orb's value
+	scales with the interval) while there is half as much on the ground, and what
+	is there is worth stopping for.
+]]
+PlotConfig.MAX_PICKUPS_PER_PLOT = 18 -- hard cap: keeps part count (and lag) bounded
 PlotConfig.PICKUP_LIFETIME = 90 -- seconds before an uncollected pickup despawns
-PlotConfig.ESSENCE_ORB_INTERVAL = 9 -- seconds between a beast's essence drops
-PlotConfig.PICKUP_MAGNET_RANGE = 16 -- studs at which pickups start flying to the owner
+PlotConfig.ESSENCE_ORB_INTERVAL = 18 -- seconds between a beast's essence drops
+PlotConfig.PICKUP_MAGNET_RANGE = 24 -- studs at which pickups start flying to the owner
 PlotConfig.PICKUP_MAGNET_SPEED = 34 -- studs/sec once a pickup is homing
 
 -- An orb's worth is the DROPPING BEAST's, not an even split of the plot's rate.

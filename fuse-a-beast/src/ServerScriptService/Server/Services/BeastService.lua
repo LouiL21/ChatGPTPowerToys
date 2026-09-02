@@ -49,10 +49,29 @@ function BeastService:Init(registry)
 	Registry = registry
 end
 
-local function randomPointInHabitat(centre: Vector3): Vector3
-	local angle = math.random() * math.pi * 2
-	local radius = math.sqrt(math.random()) * PlotConfig.HABITAT_RADIUS
+--[[
+	Where beast `index` of `total` lives.
+
+	Every beast used to wander the whole habitat, which meant they converged on
+	the middle and a full sanctuary looked like a scrum. Each now gets its own
+	patch, laid out by the golden angle so the points spread evenly across the
+	disc however many there are — no clumps, no rows, and adding a beast never
+	moves anyone else's spot much.
+]]
+local GOLDEN_ANGLE = math.pi * (3 - math.sqrt(5))
+
+local function anchorFor(centre: Vector3, index: number, total: number): Vector3
+	local angle = index * GOLDEN_ANGLE
+	-- sqrt keeps the density even rather than crowding the centre.
+	local radius = PlotConfig.HABITAT_RADIUS * math.sqrt((index + 0.5) / math.max(1, total))
 	return centre + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+end
+
+-- A wander target inside one beast's own patch.
+local function roamPoint(anchor: Vector3): Vector3
+	local angle = math.random() * math.pi * 2
+	local radius = math.sqrt(math.random()) * PlotConfig.BEAST_ROAM_RADIUS
+	return anchor + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
 end
 
 -- Rebuild every physical beast on a player's plot from their display list.
@@ -83,7 +102,8 @@ function BeastService:refresh(player: Player)
 		if typeof(item) == "table" and typeof(item.beastId) == "string" then
 			local model = BeastModelFactory.create(item.beastId, item.variant)
 			if model then
-				local position = randomPointInHabitat(centre)
+				local anchor = anchorFor(centre, spawned, math.min(slots, #data.display))
+				local position = roamPoint(anchor)
 				BeastModelFactory.pivot(model, CFrame.new(position))
 				model.Parent = handle.beastFolder
 
@@ -91,11 +111,11 @@ function BeastService:refresh(player: Player)
 					model = model,
 					userId = player.UserId,
 					position = position,
-					target = randomPointInHabitat(centre),
+					target = roamPoint(anchor),
 					facing = 0,
 					nextOrb = os.clock() + math.random() * PlotConfig.ESSENCE_ORB_INTERVAL,
 					speed = 3 + math.random() * 2.5,
-					homeCentre = centre,
+					homeCentre = anchor,
 					rarity = model:GetAttribute("Rarity") or "Common",
 					variant = model:GetAttribute("Variant") or "Normal",
 				})
@@ -183,7 +203,7 @@ function BeastService:Start()
 				local distance = toTarget.Magnitude
 
 				if distance < 2 then
-					agent.target = randomPointInHabitat(agent.homeCentre)
+					agent.target = roamPoint(agent.homeCentre)
 				else
 					local step = math.min(agent.speed * dt, distance)
 					agent.position += toTarget.Unit * step

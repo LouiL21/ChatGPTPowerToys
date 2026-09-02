@@ -497,7 +497,11 @@ end
 	same as the Chamber.
 ]]
 local function buildBarn(model: Model, origin: CFrame): (Model, BasePart)
-	local base = origin * CFrame.new(PlotConfig.BARN_OFFSET)
+	-- Turned to face the habitat. The barn's doorway is on its own -Z, and the
+	-- barn stands at the back of the plot, so unrotated it opened outward at the
+	-- boundary wall — you could only see inside from off the plot. Rotating the
+	-- whole building keeps every offset below in one consistent frame.
+	local base = origin * CFrame.new(PlotConfig.BARN_OFFSET) * CFrame.Angles(0, math.pi, 0)
 	local barn = Instance.new("Model")
 	barn.Name = "BeastBarn"
 	barn.Parent = model
