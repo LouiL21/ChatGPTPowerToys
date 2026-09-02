@@ -7,8 +7,12 @@
 	changing the sanctuary layout, the tycoon upgrade ladder, or the island size
 	is a config edit, never geometry code.
 
-	Coordinates are PLOT-LOCAL (relative to the plot's centre, +Z toward the
-	island rim, -Z toward the hub). PlotBuilder maps them into world space.
+	Coordinates are PLOT-LOCAL, relative to the plot's centre:
+	  +Z is toward the HUB — the entrance you walk in from, where the buy-pads
+	     and the nameplate live.
+	  -Z is toward the island RIM — the back, where the Altar, Fusion Chamber
+	     and Beast Barn stand and where the boundary wall runs.
+	PlotBuilder maps them into world space.
 ]]
 
 local PlotConfig = {}
@@ -23,14 +27,25 @@ PlotConfig.PLOT_RING_RADIUS = 340 -- distance from island centre to plot centre
 PlotConfig.HUB_RADIUS = 100 -- central hub disc
 PlotConfig.GROUND_Y = 0
 
+--[[
+	Surface palette.
+
+	These were all dark desaturated blues, which under a twilight sky collapsed
+	into one another: sea, path, hub floor, arena and plot ground were
+	indistinguishable, so the whole island read as a single flat mass. Each
+	surface now differs in HUE as well as value — green ground, warm stone path,
+	violet hub, bright teal sea — because at low light levels hue survives where
+	brightness alone does not.
+]]
 PlotConfig.COLORS = {
-	hubGround = Color3.fromRGB(58, 48, 92),
-	hubTrim = Color3.fromRGB(139, 92, 246),
-	plotGround = Color3.fromRGB(64, 92, 62),
-	plotRim = Color3.fromRGB(38, 30, 60),
-	path = Color3.fromRGB(86, 74, 122),
-	water = Color3.fromRGB(38, 86, 140),
-	altarStone = Color3.fromRGB(52, 44, 82),
+	hubGround = Color3.fromRGB(96, 82, 146),
+	hubTrim = Color3.fromRGB(178, 132, 255),
+	plotGround = Color3.fromRGB(96, 148, 84),
+	plotRim = Color3.fromRGB(62, 50, 92),
+	path = Color3.fromRGB(196, 178, 150), -- warm sandstone: the one warm surface
+	water = Color3.fromRGB(38, 132, 190),
+	arenaFloor = Color3.fromRGB(70, 56, 108),
+	altarStone = Color3.fromRGB(72, 62, 108),
 	altarGlow = Color3.fromRGB(167, 139, 250),
 	locked = Color3.fromRGB(58, 54, 76),
 	-- Deliberately a deep amber, not a bright one. Neon material plus bloom
@@ -62,8 +77,9 @@ PlotConfig.NODE_MAX_TIER = 5
 PlotConfig.ALTAR_OFFSET = Vector3.new(0, 0, -52) -- Summoning Altar, back-centre
 PlotConfig.CHAMBER_OFFSET = Vector3.new(-54, 0, -50) -- Fusion Chamber, back-left
 PlotConfig.BARN_OFFSET = Vector3.new(52, 0, -50) -- Beast Barn, back-right
-PlotConfig.SPAWN_OFFSET = Vector3.new(0, 0, 62) -- where the owner is placed
-PlotConfig.SIGN_OFFSET = Vector3.new(0, 0, 72) -- nameplate at the plot entrance
+-- Clear of the front pad row, so arriving home never lands you on a buy-pad.
+PlotConfig.SPAWN_OFFSET = Vector3.new(0, 0, 70) -- where the owner is placed
+PlotConfig.SIGN_OFFSET = Vector3.new(0, 0, 74) -- nameplate at the plot entrance
 
 -- Beasts wander inside this radius around the habitat centre. The radius has to
 -- grow with the slot count or a full sanctuary reads as a pile rather than a

@@ -17,7 +17,20 @@ local Build = require(script.Parent.Build)
 
 local WorldBuilder = {}
 
--- Plot i (1-based) sits on a ring around the hub, facing inward.
+--[[
+	Plot i (1-based) sits on a ring around the hub.
+
+	Orientation matters more than it looks. Roblox's LookVector is a CFrame's
+	-Z, so `lookAt(position, hub)` points a plot's -Z at the centre — which put
+	the plot's BACK against the path players arrive on. The result was a
+	decorative wall across the entrance and the buy-pads stranded at the far
+	edge, 150 studs behind the altar.
+
+	Looking outward instead puts +Z toward the hub, which is the direction
+	PlotConfig's offsets were written for: pads and the nameplate greet you, the
+	altar and buildings sit at the back, and the walls fence the three OUTER
+	edges.
+]]
 function WorldBuilder.plotCFrame(index: number): CFrame
 	local angle = (index - 1) / PlotConfig.PLOT_COUNT * math.pi * 2
 	local position = Vector3.new(
@@ -25,8 +38,8 @@ function WorldBuilder.plotCFrame(index: number): CFrame
 		PlotConfig.GROUND_Y,
 		math.sin(angle) * PlotConfig.PLOT_RING_RADIUS
 	)
-	-- Face the hub, so a plot's -Z is "toward the centre".
-	return CFrame.lookAt(position, Vector3.new(0, PlotConfig.GROUND_Y, 0))
+	local hub = Vector3.new(0, PlotConfig.GROUND_Y, 0)
+	return CFrame.lookAt(position, position + (position - hub))
 end
 
 --[[
@@ -114,7 +127,8 @@ local function buildHub(parent: Instance)
 		position = Vector3.new(0, PlotConfig.GROUND_Y - 6, 0),
 		color = PlotConfig.COLORS.water,
 		material = Enum.Material.Glass,
-		transparency = 0.28,
+		transparency = 0.35,
+		reflectance = 0.35, -- catches the sky, so water reads as water
 		name = "Sea",
 		parent = hub,
 	})
@@ -140,7 +154,10 @@ local function buildHub(parent: Instance)
 
 	-- The Arena: a raised ring at the hub centre where events run.
 	local arena = Build.folder("Arena", hub)
-	Build.disc(34, 4, Vector3.new(0, PlotConfig.GROUND_Y + 1, 0), Color3.fromRGB(46, 38, 74), arena).Name = "ArenaFloor"
+	-- The Arena floor sits inside a bright ring, so the fighting ground is
+	-- legible as its own place rather than more hub.
+	Build.disc(38, 4, Vector3.new(0, PlotConfig.GROUND_Y + 0.9, 0), PlotConfig.COLORS.hubTrim, arena).Name = "ArenaRing"
+	Build.disc(34, 4, Vector3.new(0, PlotConfig.GROUND_Y + 1, 0), PlotConfig.COLORS.arenaFloor, arena).Name = "ArenaFloor"
 	for i = 1, 10 do
 		local angle = (i - 1) / 10 * math.pi * 2
 		local pillar = Build.part({
@@ -189,7 +206,7 @@ local function buildHub(parent: Instance)
 				Vector3.new(0, PlotConfig.GROUND_Y - 0.5, 0)
 			),
 			color = PlotConfig.COLORS.path,
-			material = Enum.Material.Cobblestone,
+			material = Enum.Material.Sandstone,
 			name = "Path",
 			parent = paths,
 		})

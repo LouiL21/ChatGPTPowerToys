@@ -74,11 +74,29 @@ end
 
 Logger:info("Initialising", #allServices, "services...")
 
+--[[
+	Runs one lifecycle hook, isolated.
+
+	Without this a single error anywhere in the chain aborts the whole loop, so
+	DataService:Start never runs, no profile ever loads, and the game comes up
+	looking alive but completely inert — an island with no owner, a HUD stuck on
+	zero, and nothing in the log to connect the two. One broken service should
+	cost you that service, not the server.
+]]
+local function run(service, phase: string)
+	local hook = service[phase]
+	if not hook then
+		return
+	end
+	local ok, err = pcall(hook, service, Registry)
+	if not ok then
+		Logger:warn(string.format("%s:%s failed — %s", service.Name, phase, tostring(err)))
+	end
+end
+
 -- Phase 1: Init (no remotes bound yet).
 for _, service in ipairs(allServices) do
-	if service.Init then
-		service:Init(Registry)
-	end
+	run(service, "Init")
 end
 
 -- Configure the network choke point now that DataService exists.
@@ -88,8 +106,8 @@ ServerNet.configure(limiter, DataService)
 -- Phase 2: Start everything EXCEPT DataService first, so all ProfileLoaded
 -- listeners are connected before profiles begin loading.
 for _, service in ipairs(allServices) do
-	if service ~= DataService and service.Start then
-		service:Start()
+	if service ~= DataService then
+		run(service, "Start")
 	end
 end
 

@@ -92,8 +92,9 @@ local function buildGround(model: Model, origin: CFrame)
 		parent = model,
 	})
 
-	-- Low decorative walls on the three outer edges (keeps players on the plot
-	-- and gives the sanctuary a contained, buildable feel).
+	-- Low decorative walls on the three OUTER edges — the rim side and both
+	-- flanks. The hub-facing edge (+Z) is deliberately left open: that is where
+	-- the path arrives, and a wall there is a wall across your own front door.
 	local wallSpecs = {
 		{ size = Vector3.new(PlotConfig.PLOT_SIZE, 5, 2), offset = Vector3.new(0, 2.5, -half) },
 		{ size = Vector3.new(2, 5, PlotConfig.PLOT_SIZE), offset = Vector3.new(-half, 2.5, 0) },
@@ -370,21 +371,37 @@ end
 	Built hidden and revealed by PlotService:applyProgression on purchase, the
 	same as the Chamber.
 ]]
+--[[
+	The Beast Barn: the mid-game landmark at the back of the plot.
+
+	Everything else on a sanctuary is a crystal or a slab, so the plot reads as
+	an arcane workshop and nothing else. A barn — pitched roof, big doors, hay,
+	a fence — is a recognisably WARM building, and having one thing on the plot
+	that is not glowing is what makes the glowing things read as special.
+
+	`base` is a CFrame, not a position: everything here is placed in PLOT-LOCAL
+	space so the barn is square to its sanctuary. Building it from a world
+	position instead would leave it aligned to the world axes, which on a ring of
+	eight rotated plots means seven of them get a barn sitting at an angle.
+
+	Built hidden and revealed by PlotService:applyProgression on purchase, the
+	same as the Chamber.
+]]
 local function buildBarn(model: Model, origin: CFrame): (Model, BasePart)
-	local base = toWorld(origin, PlotConfig.BARN_OFFSET)
+	local base = origin * CFrame.new(PlotConfig.BARN_OFFSET)
 	local barn = Instance.new("Model")
 	barn.Name = "BeastBarn"
 	barn.Parent = model
 
-	local WIDTH, DEPTH, WALL = 34, 26, 14
-	local PLANK = Color3.fromRGB(154, 58, 48)
-	local TRIM = Color3.fromRGB(238, 232, 214)
-	local ROOF = Color3.fromRGB(62, 52, 78)
+	local WIDTH, DEPTH, WALL = 32, 24, 12
+	local PLANK = Color3.fromRGB(158, 62, 52)
+	local TRIM = Color3.fromRGB(240, 234, 218)
+	local ROOF = Color3.fromRGB(74, 62, 96)
 
-	local function plank(size: Vector3, offset: Vector3, color: Color3, material: Enum.Material?, name: string)
-		Build.part({
+	local function slab(size: Vector3, offset: Vector3, color: Color3, material: Enum.Material?, name: string)
+		return Build.part({
 			size = size,
-			position = base + offset,
+			cframe = base * CFrame.new(offset),
 			color = color,
 			material = material or Enum.Material.WoodPlanks,
 			name = name,
@@ -393,58 +410,71 @@ local function buildBarn(model: Model, origin: CFrame): (Model, BasePart)
 	end
 
 	-- Foundation and floor.
-	plank(Vector3.new(WIDTH + 4, 1.5, DEPTH + 4), Vector3.new(0, 0.75, 0), Color3.fromRGB(72, 66, 88), Enum.Material.Slate, "Foundation")
-	plank(Vector3.new(WIDTH, 0.6, DEPTH), Vector3.new(0, 1.7, 0), Color3.fromRGB(112, 84, 60), Enum.Material.Wood, "Floor")
+	slab(Vector3.new(WIDTH + 4, 1.5, DEPTH + 4), Vector3.new(0, 0.75, 0), Color3.fromRGB(72, 66, 88), Enum.Material.Slate, "Foundation")
+	slab(Vector3.new(WIDTH, 0.6, DEPTH), Vector3.new(0, 1.7, 0), Color3.fromRGB(116, 88, 62), Enum.Material.Wood, "Floor")
 
-	-- Side and back walls. The front is left open so beasts (and the owner) can
-	-- walk straight in — a barn you cannot enter is a prop.
-	plank(Vector3.new(1.6, WALL, DEPTH), Vector3.new(-WIDTH / 2, WALL / 2 + 2, 0), PLANK, nil, "WallLeft")
-	plank(Vector3.new(1.6, WALL, DEPTH), Vector3.new(WIDTH / 2, WALL / 2 + 2, 0), PLANK, nil, "WallRight")
-	plank(Vector3.new(WIDTH, WALL, 1.6), Vector3.new(0, WALL / 2 + 2, DEPTH / 2), PLANK, nil, "WallBack")
+	-- Side and back walls. The front (-Z, facing the habitat) is left open so
+	-- beasts and the owner can walk straight in — a barn you cannot enter is a
+	-- prop, not a building.
+	local wallY = WALL / 2 + 2
+	slab(Vector3.new(1.6, WALL, DEPTH), Vector3.new(-WIDTH / 2, wallY, 0), PLANK, nil, "WallLeft")
+	slab(Vector3.new(1.6, WALL, DEPTH), Vector3.new(WIDTH / 2, wallY, 0), PLANK, nil, "WallRight")
+	slab(Vector3.new(WIDTH, WALL, 1.6), Vector3.new(0, wallY, DEPTH / 2), PLANK, nil, "WallBack")
 
 	-- White trim bands: the detail that reads "barn" rather than "red shed".
 	for _, spec in ipairs({
-		{ size = Vector3.new(WIDTH + 1, 1.2, 1.8), offset = Vector3.new(0, 3, DEPTH / 2) },
+		{ size = Vector3.new(WIDTH + 1, 1.2, 1.8), offset = Vector3.new(0, 2.9, DEPTH / 2) },
 		{ size = Vector3.new(WIDTH + 1, 1.2, 1.8), offset = Vector3.new(0, WALL + 1.4, DEPTH / 2) },
 		{ size = Vector3.new(1.8, 1.2, DEPTH + 1), offset = Vector3.new(-WIDTH / 2, WALL + 1.4, 0) },
 		{ size = Vector3.new(1.8, 1.2, DEPTH + 1), offset = Vector3.new(WIDTH / 2, WALL + 1.4, 0) },
 	}) do
-		plank(spec.size, spec.offset, TRIM, Enum.Material.SmoothPlastic, "Trim")
+		slab(spec.size, spec.offset, TRIM, Enum.Material.SmoothPlastic, "Trim")
 	end
 
-	-- Gable roof from two wedges — the whole reason wedges exist in Build.
-	local roofY = WALL + 2 + 5
+	--[[
+		Gable roof: two tilted slabs meeting at a ridge.
+
+		Deliberately NOT wedges. A WedgePart's slope runs along its own Z axis,
+		so getting a gable out of one means reasoning about which face the
+		hypotenuse lands on — easy to get backwards, and exactly what produced a
+		roof lying through the floor last time. Two rotated boxes are unambiguous.
+	]]
+	local eaveY = WALL + 2
+	local rise = 9
+	local run = WIDTH / 2
+	local pitch = math.atan2(rise, run)
+	local slope = math.sqrt(run * run + rise * rise) + 3 -- + overhang
 	for _, side in ipairs({ -1, 1 }) do
 		Build.part({
-			size = Vector3.new(WIDTH / 2 + 1, 10, DEPTH + 4),
-			cframe = base
-				* CFrame.new(side * (WIDTH / 4), roofY, 0)
-				-- Mirror the wedge so the two halves meet at the ridge.
-				* CFrame.Angles(0, side > 0 and 0 or math.pi, 0),
+			size = Vector3.new(slope, 1.4, DEPTH + 5),
+			-- Tilt so the OUTER edge drops: the half on +X rotates negatively.
+			cframe = base * CFrame.new(side * run / 2, eaveY + rise / 2, 0) * CFrame.Angles(0, 0, -side * pitch),
 			color = ROOF,
 			material = Enum.Material.Slate,
-			kind = "wedge",
 			name = "Roof",
 			parent = barn,
 		})
 	end
+	slab(Vector3.new(2.2, 1.6, DEPTH + 6), Vector3.new(0, eaveY + rise, 0), TRIM, Enum.Material.SmoothPlastic, "Ridge")
 
-	-- Gable face above the doors, and the ridge beam.
-	plank(Vector3.new(WIDTH, 1, 1.4), Vector3.new(0, roofY + 10, 0), TRIM, Enum.Material.SmoothPlastic, "Ridge")
+	-- Gable face filling the triangle above the back wall.
+	for i = 1, 4 do
+		local t = (i - 0.5) / 4
+		slab(
+			Vector3.new(WIDTH * (1 - t), rise / 4 + 0.2, 1.2),
+			Vector3.new(0, eaveY + rise * t - rise / 8, DEPTH / 2),
+			PLANK,
+			nil,
+			"Gable"
+		)
+	end
 
-	-- Hay loft opening with a warm light inside: the barn should glow from
-	-- within at dusk, which is the whole point of putting it in a twilight world.
-	local loft = Build.part({
-		size = Vector3.new(9, 8, 1),
-		position = base + Vector3.new(0, WALL - 1, -DEPTH / 2 - 0.4),
-		color = Color3.fromRGB(46, 32, 26),
-		material = Enum.Material.Wood,
-		name = "LoftOpening",
-		parent = barn,
-	})
-	Build.glow(loft, Color3.fromRGB(255, 186, 96), 20, 1.4)
+	-- Hay loft opening with a warm light: the barn should glow from within at
+	-- dusk, which is the point of putting it in a twilight world.
+	local loft = slab(Vector3.new(8, 6, 1), Vector3.new(0, eaveY + rise * 0.45, -DEPTH / 2 - 0.4), Color3.fromRGB(48, 34, 26), Enum.Material.Wood, "LoftOpening")
+	Build.glow(loft, Color3.fromRGB(255, 186, 96), 22, 1.6)
 
-	-- Doorway frame + two hanging doors, swung open.
+	-- Two doors, hung open either side of the entrance.
 	for _, side in ipairs({ -1, 1 }) do
 		Build.part({
 			size = Vector3.new(WIDTH / 2 - 2, WALL - 2, 1.2),
@@ -467,64 +497,40 @@ local function buildBarn(model: Model, origin: CFrame): (Model, BasePart)
 		Build.part({
 			size = Vector3.new(6, 4.5, 6),
 			cframe = base * CFrame.new(offset) * CFrame.Angles(0, math.rad(18), 0),
-			color = Color3.fromRGB(214, 178, 82),
+			color = Color3.fromRGB(216, 182, 88),
 			material = Enum.Material.Grass,
 			canCollide = false,
 			name = "HayBale",
 			parent = barn,
 		})
 	end
-	plank(Vector3.new(12, 2.4, 4), Vector3.new(0, 3.2, DEPTH / 2 - 5), Color3.fromRGB(96, 72, 52), Enum.Material.Wood, "Trough")
+	slab(Vector3.new(12, 2.4, 4), Vector3.new(0, 3.2, DEPTH / 2 - 5), Color3.fromRGB(98, 74, 54), Enum.Material.Wood, "Trough")
 
 	-- Paddock fence sweeping out from the front corners.
 	for _, side in ipairs({ -1, 1 }) do
 		for i = 0, 3 do
 			local x = side * (WIDTH / 2 + 4 + i * 7)
-			Build.part({
-				size = Vector3.new(1, 6, 1),
-				position = base + Vector3.new(x, 3, -DEPTH / 2 - 6),
-				color = Color3.fromRGB(126, 96, 66),
-				material = Enum.Material.Wood,
-				canCollide = false,
-				name = "FencePost",
-				parent = barn,
-			})
+			slab(Vector3.new(1, 6, 1), Vector3.new(x, 3, -DEPTH / 2 - 6), Color3.fromRGB(128, 98, 68), Enum.Material.Wood, "FencePost")
 			if i > 0 then
-				Build.part({
-					size = Vector3.new(7, 0.8, 0.8),
-					position = base + Vector3.new(x - side * 3.5, 4.4, -DEPTH / 2 - 6),
-					color = Color3.fromRGB(126, 96, 66),
-					material = Enum.Material.Wood,
-					canCollide = false,
-					name = "FenceRail",
-					parent = barn,
-				})
+				slab(
+					Vector3.new(7, 0.8, 0.8),
+					Vector3.new(x - side * 3.5, 4.4, -DEPTH / 2 - 6),
+					Color3.fromRGB(128, 98, 68),
+					Enum.Material.Wood,
+					"FenceRail"
+				)
 			end
 		end
 	end
 
-	-- A weather vane on the ridge, animated by AmbienceService.
-	local vane = Build.part({
-		size = Vector3.new(3.2, 3.2, 0.4),
-		position = base + Vector3.new(0, roofY + 14, 0),
-		color = PlotConfig.COLORS.altarGlow,
-		material = Enum.Material.Neon,
-		canCollide = false,
-		name = "BarnVane",
-		parent = barn,
-	})
+	-- A weather vane on the ridge, spun by AmbienceService.
+	local vane = slab(Vector3.new(3.2, 3.2, 0.4), Vector3.new(0, eaveY + rise + 3, 0), PlotConfig.COLORS.altarGlow, Enum.Material.Neon, "BarnVane")
+	vane.CanCollide = false
 	Build.glow(vane, PlotConfig.COLORS.altarGlow, 14, 1.2)
 
 	-- The interaction post: walking up opens the Pets panel, which is where you
 	-- decide who lives here.
-	local post = Build.part({
-		size = Vector3.new(2.4, 8, 2.4),
-		position = base + Vector3.new(-WIDTH / 2 - 5, 6, -DEPTH / 2 - 2),
-		color = Color3.fromRGB(96, 72, 52),
-		material = Enum.Material.Wood,
-		name = "BarnPost",
-		parent = barn,
-	})
+	local post = slab(Vector3.new(2.4, 8, 2.4), Vector3.new(-WIDTH / 2 - 5, 6, -DEPTH / 2 - 2), Color3.fromRGB(98, 74, 54), Enum.Material.Wood, "BarnPost")
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "BarnPrompt"
