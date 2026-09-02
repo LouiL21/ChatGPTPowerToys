@@ -29,6 +29,7 @@ local QuestConfig = require(Shared.Config.QuestConfig)
 local PlotConfig = require(Shared.Config.PlotConfig)
 local BeastInventory = require(Shared.Util.BeastInventory)
 local Format = require(Shared.Util.Format)
+local Daily = require(Shared.Util.Daily)
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Create = require(script.Parent.Parent.UI.Create)
@@ -242,11 +243,25 @@ function UIController:_renderSummon()
 	local data = ClientState.data
 
 	UI.label("Pick 1-3 elements. Rarer beasts hide behind rarer combinations.", {
-		Size = UDim2.new(1, -8, 0, 34),
+		Size = UDim2.new(1, -8, 0, 22),
 		TextSize = 13,
 		TextColor3 = Theme.textMuted,
 		TextWrapped = true,
 		LayoutOrder = 1,
+		Parent = body,
+	})
+
+	-- Today's featured element. Both sides derive it from the UTC date, so this
+	-- needs no replication and a player can see the rotation coming.
+	local featured = Daily.featuredElement()
+	UI.label(string.format("★ TODAY: %s summons roll on %.1fx luck — resets at midnight UTC",
+		string.upper(featured), GameConfig.DAILY_FEATURE_LUCK), {
+		Size = UDim2.new(1, -8, 0, 20),
+		Font = Theme.fontBold,
+		TextSize = 12,
+		TextColor3 = Theme.element[featured] or Theme.goldLight,
+		TextWrapped = true,
+		LayoutOrder = 2,
 		Parent = body,
 	})
 
@@ -275,6 +290,8 @@ function UIController:_renderSummon()
 		)
 		if isSelected then
 			UI.stroke(btn, 4, Color3.fromRGB(255, 255, 255))
+		elseif element.id == featured then
+			UI.stroke(btn, 4, Theme.gold)
 		end
 		btn.MouseButton1Click:Connect(function()
 			local index = table.find(selectedElements, element.id)
@@ -701,13 +718,30 @@ function UIController:_renderBeastdex()
 	local data = ClientState.data
 	local codex = data.codex or {}
 	local discovered = BeastInventory.speciesCount(codex)
+	local entries = BeastInventory.variantEntries(codex)
+	local entryTotal = BeastInventory.variantTotal()
 
-	UI.label(string.format("Discovered  %d / %d", discovered, BeastConfig.count()), {
+	UI.label(string.format("Species  %d / %d", discovered, BeastConfig.count()), {
 		Size = UDim2.new(1, -8, 0, 26),
 		Font = Theme.fontDisplay,
 		TextSize = 17,
 		TextColor3 = Theme.goldLight,
 		LayoutOrder = 1,
+		Parent = body,
+	})
+	-- The real collection: every species at every variant. Showing only the
+	-- species count made finishing the dex look like finishing the game, when it
+	-- is a fifth of it.
+	UI.label(string.format("Collection  %d / %d  ·  every species at every variant", entries, entryTotal), {
+		Size = UDim2.new(1, -8, 0, 20),
+		TextSize = 12,
+		TextColor3 = Theme.accentLight,
+		LayoutOrder = 2,
+		Parent = body,
+	})
+	UI.bar(entries / math.max(1, entryTotal), Theme.rarity.Mythic, {
+		Size = UDim2.new(1, -16, 0, 10),
+		LayoutOrder = 3,
 		Parent = body,
 	})
 
@@ -717,7 +751,7 @@ function UIController:_renderBeastdex()
 			Size = UDim2.new(1, -8, 0, 48),
 			BackgroundColor3 = entry and Theme.panel or Color3.fromRGB(21, 17, 42),
 			BorderSizePixel = 0,
-			LayoutOrder = 1 + index,
+			LayoutOrder = 3 + index,
 			Parent = body,
 		}, false)
 

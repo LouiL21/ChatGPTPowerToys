@@ -37,7 +37,7 @@ local STEPS = {
 	{
 		glyph = "⚗️",
 		title = "Fuse two beasts",
-		body = "Buy the Fusion Chamber (first pad at your entrance). Two of the SAME beast roll a better variant: Normal → Shiny → Golden → Rainbow → Void. Two DIFFERENT beasts make a hybrid from their elements. Duplicates are fuel, never junk.",
+		body = "Buy the Fusion Chamber (first pad at your entrance). Two of the SAME beast roll a better variant: Normal → Shiny → Golden → Rainbow → Void. Two DIFFERENT beasts can climb a rarity tier — easy at the bottom, brutal at the top. Duplicates are fuel, never junk.",
 	},
 	{
 		glyph = "🐾",
@@ -50,9 +50,14 @@ local STEPS = {
 		body = "Ten bosses, plus duels with other players. Power comes only from what you collect and fuse — never from the shop — so the Arena is a test of your roster.",
 	},
 	{
+		glyph = "♾️",
+		title = "The long game",
+		body = "68 species is the FIRST goal, not the last — every one can be held at five variants, so the full collection is 340 entries. Secrets are a genuine chase: two Mythics have about a 1-in-70 shot at one.",
+	},
+	{
 		glyph = "🏛️",
 		title = "Grow",
-		body = "Step on buy-pads to unlock nodes and habitat space, and build the Beast Barn at the back for more room and a bigger rate. Upgrade the Altar too. Nobody can rob your sanctuary.",
+		body = "Buy-pads unlock nodes, habitat space, your Cottage and the Beast Barn. Check the Altar daily: a different element is FEATURED each day and summons using it roll on much better luck.",
 	},
 }
 

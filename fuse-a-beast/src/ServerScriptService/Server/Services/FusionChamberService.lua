@@ -154,14 +154,15 @@ local MAX_VARIANT_COMPENSATION = 1
 	Chamber luck moves weight out of `same` into the upgrade bands, clamped so
 	an upgrade never becomes the likely outcome.
 ]]
-function FusionChamberService:_outcomeStep(player: Player): number
-	local bands = GameConfig.CHAMBER_OUTCOME
+function FusionChamberService:_outcomeStep(player: Player, floorIndex: number): number
+	-- Odds tighten as you climb; see GameConfig.CHAMBER_UPGRADE_BY_TIER.
+	local bands = GameConfig.CHAMBER_UPGRADE_BY_TIER[floorIndex] or GameConfig.CHAMBER_OUTCOME
 	local luck = Registry.MonetizationService:getFusionLuck(player)
 
 	local slightly = bands.slightly * luck
 	local better = bands.better * luck
 	local total = slightly + better
-	if total > GameConfig.CHAMBER_MAX_UPGRADE_CHANCE then
+	if total > 0 and total > GameConfig.CHAMBER_MAX_UPGRADE_CHANCE then
 		-- Scale both down together so their ratio to each other is preserved.
 		local scale = GameConfig.CHAMBER_MAX_UPGRADE_CHANCE / total
 		slightly *= scale
@@ -202,7 +203,7 @@ function FusionChamberService:_hybridFuse(player: Player, data, a, b)
 		return table.find(GameConfig.RARITY_ORDER, rarity) or 1
 	end
 	local floorIndex = math.max(rarityIndexOf(beastA.rarity), rarityIndexOf(beastB.rarity))
-	local step = self:_outcomeStep(player)
+	local step = self:_outcomeStep(player, floorIndex)
 	local targetIndex = math.min(#GameConfig.RARITY_ORDER, floorIndex + step)
 
 	-- Walk down from the target to the floor, taking the first rarity that has

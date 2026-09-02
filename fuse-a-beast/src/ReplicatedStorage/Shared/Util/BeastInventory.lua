@@ -76,6 +76,30 @@ function BeastInventory.speciesCount(codex): number
 	return n
 end
 
+--[[
+	How many distinct species+variant entries are held, and how many exist.
+
+	Species count alone understates the game badly: completing the Beastdex is
+	the FIRST goal, not the last one. Every species can be held at five
+	variants, so the real collection is five times bigger than the species list
+	and cannot be finished in a sitting.
+]]
+function BeastInventory.variantEntries(codex): number
+	local held = 0
+	for _, entry in pairs(codex) do
+		for _, count in pairs(entry.variants) do
+			if count > 0 then
+				held += 1
+			end
+		end
+	end
+	return held
+end
+
+function BeastInventory.variantTotal(): number
+	return BeastConfig.count() * #VariantConfig.Order
+end
+
 -- ── Derived stats ─────────────────────────────────────────────────────────
 
 function BeastInventory.stats(beastId: string, variantId: string): { power: number, health: number }

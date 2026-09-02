@@ -65,6 +65,38 @@ GameConfig.CHAMBER_OUTCOME = {
 	better = 0.10, -- two rarity tiers up
 }
 GameConfig.CHAMBER_MAX_UPGRADE_CHANCE = 0.6 -- ceiling on slightly + better after luck
+
+--[[
+	Per-tier override of those odds — and the single most important table in the
+	game's pacing.
+
+	A FLAT 70/20/10 across every tier is an escalator, not a chase. Expected gain
+	is 0.4 tiers per fusion, so Common to Secret is about fifteen fusions and a
+	player finishes the entire Beastdex inside an hour. Worse, two Mythics had a
+	30% chance of producing a Secret, which is meant to be the rarest thing in
+	the game.
+
+	So the generosity is front-loaded: the early tiers keep the feel of 70/20/10
+	because that is where a new player needs momentum, and the top tightens hard
+	until Mythic to Secret is a genuine grind. Indexed by the BETTER PARENT's
+	rarity index (1 = Common ... 7 = Secret).
+
+	Expected fusions to climb one tier: ~2 at Common, ~4 at Rare, ~13 at
+	Legendary, ~65 at Mythic — and each of those consumes two beasts of that
+	tier, so the real cost compounds well beyond the ratio.
+]]
+GameConfig.CHAMBER_UPGRADE_BY_TIER = {
+	[1] = { slightly = 0.34, better = 0.12 }, -- Common
+	[2] = { slightly = 0.28, better = 0.09 }, -- Uncommon
+	[3] = { slightly = 0.20, better = 0.05 }, -- Rare
+	[4] = { slightly = 0.11, better = 0.02 }, -- Epic
+	[5] = { slightly = 0.06, better = 0.004 }, -- Legendary
+	[6] = { slightly = 0.015, better = 0 }, -- Mythic → Secret is the endgame chase
+	[7] = { slightly = 0, better = 0 }, -- Secret: nowhere left to climb
+}
+
+-- Summons including the day's featured element roll on this much extra luck.
+GameConfig.DAILY_FEATURE_LUCK = 2.5
 GameConfig.NEW_DISCOVERY_GEM_REWARD = { -- gems granted the FIRST time a rarity is discovered
 	Common = 1,
 	Uncommon = 2,

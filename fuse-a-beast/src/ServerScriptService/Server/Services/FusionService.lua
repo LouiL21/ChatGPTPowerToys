@@ -25,6 +25,7 @@ local ElementConfig = require(Shared.Config.ElementConfig)
 local BeastConfig = require(Shared.Config.BeastConfig)
 local RecipeConfig = require(Shared.Config.RecipeConfig)
 local BeastInventory = require(Shared.Util.BeastInventory)
+local Daily = require(Shared.Util.Daily)
 local Logger = require(Shared.Util.Logger).new("Summon")
 
 local ServerNet = require(script.Parent.Parent.ServerNet)
@@ -118,6 +119,12 @@ function FusionService:rollFromElements(player: Player, elements: { string }, mi
 	local inputSet = distinctSet(elements)
 	local eligibleByRarity = self:_eligibleByRarity(inputSet)
 	local luck = Registry.MonetizationService:getLuck(player)
+	-- Today's featured element pays out. This is the only mechanic in the game
+	-- that rewards logging in on a PARTICULAR day rather than eventually.
+	local featured = Daily.featuredElement()
+	if inputSet[featured] then
+		luck *= GameConfig.DAILY_FEATURE_LUCK
+	end
 	local rarity = self:_rollRarity(elements, eligibleByRarity, luck, minRarity)
 	if not rarity then
 		if minRarity then

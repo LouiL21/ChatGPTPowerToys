@@ -50,6 +50,11 @@ QuestConfig.Achievements = {
 	{ id = "first_secret", desc = "Discover a Secret beast", badgeId = 0 },
 	{ id = "dex_25", desc = "Complete 25 Beastdex entries", badgeId = 0 },
 	{ id = "dex_complete", desc = "Complete the entire Beastdex", badgeId = 0 },
+	-- The dex is the first goal, not the last. These are the ones that take
+	-- weeks, and they exist so the endgame has names rather than just a number.
+	{ id = "collection_50", desc = "Hold 50 species/variant combinations", badgeId = 0 },
+	{ id = "collection_150", desc = "Hold 150 species/variant combinations", badgeId = 0 },
+	{ id = "collection_all", desc = "Hold EVERY species at EVERY variant", badgeId = 0 },
 	{ id = "first_ascend", desc = "Ascend for the first time", badgeId = 0 },
 }
 

@@ -135,6 +135,19 @@ function CollectionService:checkDexMilestones(player: Player, data)
 	if discovered >= BeastConfig.count() then
 		Registry.QuestService:grantAchievement(player, "dex_complete")
 	end
+
+	-- The variant collection is the long tail: 68 species at five variants each.
+	-- Completing the species list is the first milestone, not the last.
+	local entries = BeastInventory.variantEntries(data.codex)
+	if entries >= 50 then
+		Registry.QuestService:grantAchievement(player, "collection_50")
+	end
+	if entries >= 150 then
+		Registry.QuestService:grantAchievement(player, "collection_150")
+	end
+	if entries >= BeastInventory.variantTotal() then
+		Registry.QuestService:grantAchievement(player, "collection_all")
+	end
 end
 
 function CollectionService:Start()
