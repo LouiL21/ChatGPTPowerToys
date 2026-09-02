@@ -193,11 +193,15 @@ function BeastService:Start()
 					agent.facing += delta * math.min(1, dt * 5)
 				end
 
-				-- A gentle bob sells "alive" without any animation rig.
+				-- Legs stride, tails sway, wings beat. `moving` is 1 while walking
+				-- and 0 at the target, so a beast that has arrived settles into an
+				-- idle instead of marching on the spot.
 				local bob = math.sin(now * 3 + agent.speed) * 0.18
 				BeastModelFactory.pivot(
 					agent.model,
-					CFrame.new(agent.position + Vector3.new(0, bob, 0)) * CFrame.Angles(0, agent.facing, 0)
+					CFrame.new(agent.position + Vector3.new(0, bob, 0)) * CFrame.Angles(0, agent.facing, 0),
+					now + agent.speed,
+					distance < 2 and 0 or 1
 				)
 
 				if now >= agent.nextOrb then

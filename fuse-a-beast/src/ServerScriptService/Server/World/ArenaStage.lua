@@ -178,8 +178,8 @@ function ArenaStage.new(centre: Vector3, a: Visual, b: Visual)
 		parent = self.effects,
 	})
 
-	self:_place(self.a, 0)
-	self:_place(self.b, 0)
+	self:_place(self.a, 0, 0)
+	self:_place(self.b, 0, 0)
 
 	self.connection = RunService.Heartbeat:Connect(function()
 		self:_step()
@@ -188,7 +188,7 @@ function ArenaStage.new(centre: Vector3, a: Visual, b: Visual)
 	return self
 end
 
-function ArenaStage:_place(side: Side, forward: number)
+function ArenaStage:_place(side: Side, forward: number, gait: number)
 	local drop = 0
 	local tilt = CFrame.identity
 	if side.defeated then
@@ -196,8 +196,14 @@ function ArenaStage:_place(side: Side, forward: number)
 		local t = math.clamp((os.clock() - side.fallAt) / 1.1, 0, 1)
 		tilt = CFrame.Angles(0, 0, math.rad(78 * t))
 		drop = -t * side.height * 0.35
+		gait = 0
 	end
-	BeastModelFactory.pivot(side.visual.model, side.base * CFrame.new(0, drop, -forward) * tilt)
+	BeastModelFactory.pivot(
+		side.visual.model,
+		side.base * CFrame.new(0, drop, -forward) * tilt,
+		os.clock() + side.phase,
+		gait
+	)
 end
 
 function ArenaStage:_step()
@@ -205,6 +211,10 @@ function ArenaStage:_step()
 
 	for _, side in ipairs({ self.a, self.b }) do
 		local forward = 0
+		-- Fighters are always "moving": a beast holding perfectly still between
+		-- blows is exactly the statue problem the stage exists to solve. It peaks
+		-- during a lunge so the attack reads as a charge.
+		local gait = 0.45
 
 		if side.defeated then
 			-- Fade from each part's own starting transparency toward invisible.
@@ -225,7 +235,9 @@ function ArenaStage:_step()
 					side.lungeAt = 0
 				else
 					-- Out and back in one arc.
-					forward += math.sin(t * math.pi) * LUNGE_REACH
+					local arc = math.sin(t * math.pi)
+					forward += arc * LUNGE_REACH
+					gait = math.max(gait, arc)
 				end
 			end
 
@@ -242,7 +254,7 @@ function ArenaStage:_step()
 			end
 		end
 
-		self:_place(side, forward)
+		self:_place(side, forward, gait)
 	end
 
 	-- The ring pulses so the arena itself feels live.

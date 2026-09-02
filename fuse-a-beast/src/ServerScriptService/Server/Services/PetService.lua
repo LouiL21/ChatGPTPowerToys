@@ -173,9 +173,13 @@ function PetService:Start()
 				end
 
 				local bob = math.sin(now * 3.4) * 0.28
+				-- Gait intensity ramps with how far the pet still has to travel, so
+				-- it eases out of a run rather than snapping to a standstill.
 				BeastModelFactory.pivot(
 					agent.model,
-					CFrame.new(agent.position + Vector3.new(0, bob, 0)) * CFrame.Angles(0, agent.facing, 0)
+					CFrame.new(agent.position + Vector3.new(0, bob, 0)) * CFrame.Angles(0, agent.facing, 0),
+					now,
+					math.clamp((distance - 1.5) / 6, 0, 1)
 				)
 			end
 		end

@@ -18,39 +18,39 @@ export type PartOptions = {
 	canCollide: boolean?,
 	transparency: number?,
 	shape: Enum.PartType?,
+	-- "wedge" and "corner" build WedgePart / CornerWedgePart instead of a Part.
+	-- Sloped faces are the cheapest way out of the everything-is-a-box look:
+	-- roofs, beaks, fins and tail spikes all need a taper.
+	kind: string?,
 	name: string?,
 	parent: Instance?,
-	corner: number?, -- adds a rounded look via a cylinder/ball shape hint
+	reflectance: number?,
 }
 
 function Build.part(options: PartOptions): BasePart
-	local part = Instance.new("Part")
+	local part: BasePart
+	if options.kind == "wedge" then
+		part = Instance.new("WedgePart")
+	elseif options.kind == "corner" then
+		part = Instance.new("CornerWedgePart")
+	elseif options.shape then
+		local shaped = Instance.new("Part")
+		shaped.Shape = options.shape
+		part = shaped
+	else
+		part = Instance.new("Part")
+	end
+
 	part.Size = options.size
 	part.Anchored = if options.anchored == nil then true else options.anchored
 	part.CanCollide = if options.canCollide == nil then true else options.canCollide
 	part.Color = options.color or Color3.fromRGB(140, 140, 150)
 	part.Material = options.material or Enum.Material.SmoothPlastic
 	part.Transparency = options.transparency or 0
+	part.Reflectance = options.reflectance or 0
 	part.Name = options.name or "Part"
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
-
-	if options.shape then
-		local shaped = Instance.new("Part")
-		shaped.Shape = options.shape
-		-- Part.Shape only applies to the Part class; copy props across.
-		shaped.Size = part.Size
-		shaped.Anchored = part.Anchored
-		shaped.CanCollide = part.CanCollide
-		shaped.Color = part.Color
-		shaped.Material = part.Material
-		shaped.Transparency = part.Transparency
-		shaped.Name = part.Name
-		shaped.TopSurface = Enum.SurfaceType.Smooth
-		shaped.BottomSurface = Enum.SurfaceType.Smooth
-		part:Destroy()
-		part = shaped
-	end
 
 	if options.cframe then
 		part.CFrame = options.cframe
