@@ -72,13 +72,69 @@ function Components.surface(props: { [string]: any }, shadow: boolean?): Frame
 	return frame
 end
 
+--[[
+	Adds the raised-key treatment shared by every pressable control: a heavy dark
+	outline, a light rim catching the top edge, a vertical gradient and a hard
+	shadow underneath.
+
+	The rim is the piece that does the work. A flat fill with an outline still
+	reads as a label on a dark background; a highlight along the top edge is what
+	makes the eye see a physical key standing off the surface.
+]]
+local function raise(btn: GuiObject, color: Color3)
+	Components.corner(Theme.radiusSmall, btn)
+	Components.stroke(btn, Theme.buttonStroke)
+	Components.gradient(btn, color:Lerp(Color3.new(1, 1, 1), 0.26), color:Lerp(Color3.new(0, 0, 0), 0.24))
+
+	local rim = Create("Frame", {
+		Name = "Rim",
+		Size = UDim2.new(1, -14, 0, 3),
+		Position = UDim2.fromOffset(7, 4),
+		BackgroundColor3 = Theme.rim,
+		BackgroundTransparency = 0.62,
+		BorderSizePixel = 0,
+		ZIndex = btn.ZIndex + 1,
+		Parent = btn,
+	})
+	Components.corner(999, rim)
+
+	local shadow = Create("Frame", {
+		Name = "Lift",
+		Size = btn.Size,
+		Position = btn.Position + UDim2.fromOffset(0, Theme.shadowOffset),
+		AnchorPoint = btn.AnchorPoint,
+		BackgroundColor3 = Theme.stroke,
+		BorderSizePixel = 0,
+		ZIndex = btn.ZIndex - 1,
+		Parent = btn.Parent,
+	})
+	Components.corner(Theme.radiusSmall, shadow)
+	return shadow
+end
+
+-- Press = sink into its own shadow. Cheap, and it feels great.
+local function pressable(btn: TextButton, shadow: Frame?)
+	local basePosition = btn.Position
+	btn.MouseButton1Down:Connect(function()
+		btn.Position = basePosition + UDim2.fromOffset(0, Theme.pressDepth)
+	end)
+	local function release()
+		btn.Position = basePosition
+	end
+	btn.MouseButton1Up:Connect(release)
+	btn.MouseLeave:Connect(release)
+	return shadow
+end
+
 -- Chunky button with press feedback.
 function Components.button(text: string, color: Color3, props: { [string]: any }?): TextButton
 	local merged: { [string]: any } = {
 		Text = text,
 		Font = Theme.fontDisplay,
-		TextSize = 18,
+		TextSize = 19,
 		TextColor3 = Theme.text,
+		TextStrokeTransparency = 0.55,
+		TextStrokeColor3 = Theme.stroke,
 		BackgroundColor3 = color,
 		AutoButtonColor = false,
 		BorderSizePixel = 0,
@@ -90,21 +146,29 @@ function Components.button(text: string, color: Color3, props: { [string]: any }
 	end
 
 	local btn = Create("TextButton", merged) :: TextButton
-	Components.corner(Theme.radiusSmall, btn)
-	Components.stroke(btn)
-	Components.gradient(btn, color:Lerp(Color3.new(1, 1, 1), 0.18), color:Lerp(Color3.new(0, 0, 0), 0.18))
-
-	-- Press = sink into its own shadow. Cheap, and it feels great.
-	local basePosition = btn.Position
-	btn.MouseButton1Down:Connect(function()
-		btn.Position = basePosition + UDim2.fromOffset(0, 3)
-	end)
-	local function release()
-		btn.Position = basePosition
+	-- Inside a UIListLayout the shadow would become a layout item of its own, so
+	-- only draw it for absolutely-positioned buttons.
+	local layoutParent = btn.Parent and (btn.Parent:FindFirstChildOfClass("UIListLayout")
+		or btn.Parent:FindFirstChildOfClass("UIGridLayout"))
+	if layoutParent then
+		Components.corner(Theme.radiusSmall, btn)
+		Components.stroke(btn, Theme.buttonStroke)
+		Components.gradient(btn, color:Lerp(Color3.new(1, 1, 1), 0.26), color:Lerp(Color3.new(0, 0, 0), 0.24))
+		local rim = Create("Frame", {
+			Name = "Rim",
+			Size = UDim2.new(1, -14, 0, 3),
+			Position = UDim2.fromOffset(7, 4),
+			BackgroundColor3 = Theme.rim,
+			BackgroundTransparency = 0.62,
+			BorderSizePixel = 0,
+			Parent = btn,
+		})
+		Components.corner(999, rim)
+	else
+		raise(btn, color)
 	end
-	btn.MouseButton1Up:Connect(release)
-	btn.MouseLeave:Connect(release)
 
+	pressable(btn)
 	return btn
 end
 
@@ -119,7 +183,7 @@ function Components.navButton(glyph: string, text: string, color: Color3, props:
 		BackgroundColor3 = color,
 		AutoButtonColor = false,
 		BorderSizePixel = 0,
-		Size = UDim2.fromOffset(84, 56),
+		Size = UDim2.fromOffset(92, 64),
 	}
 	if props then
 		for key, value in pairs(props) do
@@ -129,35 +193,41 @@ function Components.navButton(glyph: string, text: string, color: Color3, props:
 
 	local btn = Create("TextButton", merged) :: TextButton
 	Components.corner(Theme.radiusSmall, btn)
-	Components.stroke(btn)
-	Components.gradient(btn, color:Lerp(Color3.new(1, 1, 1), 0.2), color:Lerp(Color3.new(0, 0, 0), 0.22))
+	Components.stroke(btn, Theme.buttonStroke)
+	Components.gradient(btn, color:Lerp(Color3.new(1, 1, 1), 0.28), color:Lerp(Color3.new(0, 0, 0), 0.26))
+
+	local rim = Create("Frame", {
+		Name = "Rim",
+		Size = UDim2.new(1, -16, 0, 3),
+		Position = UDim2.fromOffset(8, 4),
+		BackgroundColor3 = Theme.rim,
+		BackgroundTransparency = 0.6,
+		BorderSizePixel = 0,
+		Parent = btn,
+	})
+	Components.corner(999, rim)
 
 	Components.label(glyph, {
-		Size = UDim2.new(1, 0, 0, 24),
-		Position = UDim2.fromOffset(0, 5),
-		TextSize = 20,
+		Size = UDim2.new(1, 0, 0, 28),
+		Position = UDim2.fromOffset(0, 8),
+		TextSize = 24,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Parent = btn,
 	})
+	-- Labels get a dark outline: white-on-mid-purple is the pairing most likely
+	-- to wash out on a bright phone screen outdoors.
 	Components.label(string.upper(text), {
-		Size = UDim2.new(1, 0, 0, 14),
-		Position = UDim2.new(0, 0, 1, -19),
+		Size = UDim2.new(1, 0, 0, 16),
+		Position = UDim2.new(0, 0, 1, -22),
 		Font = Theme.fontBold,
-		TextSize = 10,
+		TextSize = 12,
+		TextStrokeTransparency = 0.5,
+		TextStrokeColor3 = Theme.stroke,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Parent = btn,
 	})
 
-	local basePosition = btn.Position
-	btn.MouseButton1Down:Connect(function()
-		btn.Position = basePosition + UDim2.fromOffset(0, 3)
-	end)
-	local function release()
-		btn.Position = basePosition
-	end
-	btn.MouseButton1Up:Connect(release)
-	btn.MouseLeave:Connect(release)
-
+	pressable(btn)
 	return btn
 end
 

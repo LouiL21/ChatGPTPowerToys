@@ -13,18 +13,26 @@ local Theme = {}
 
 -- ── Palette ───────────────────────────────────────────────────────────────
 Theme.bg = Color3.fromRGB(16, 14, 28)
-Theme.panel = Color3.fromRGB(30, 26, 51)
-Theme.panelLight = Color3.fromRGB(47, 39, 87)
-Theme.stroke = Color3.fromRGB(10, 7, 19) -- the thick outline on everything
-Theme.accent = Color3.fromRGB(124, 58, 237)
-Theme.accentLight = Color3.fromRGB(167, 139, 250)
-Theme.gold = Color3.fromRGB(255, 196, 77)
-Theme.goldLight = Color3.fromRGB(255, 215, 130)
-Theme.cyan = Color3.fromRGB(90, 217, 240)
-Theme.green = Color3.fromRGB(77, 191, 89)
-Theme.red = Color3.fromRGB(224, 62, 82)
-Theme.text = Color3.fromRGB(244, 241, 255)
-Theme.textMuted = Color3.fromRGB(156, 147, 189)
+Theme.panel = Color3.fromRGB(34, 29, 58)
+-- Neutral BUTTON fill. This used to double as a panel tint, which made every
+-- "secondary" button — Beasts, Pets, Quests — nearly the same colour as the
+-- surface behind it, so half the menu read as decoration rather than something
+-- you could press. It is now clearly lighter than any panel it sits on.
+Theme.panelLight = Color3.fromRGB(92, 79, 156)
+Theme.stroke = Color3.fromRGB(8, 6, 16) -- the thick outline on everything
+-- A light rim drawn INSIDE a control's top edge. Buttons read as raised because
+-- they catch light on top and sit on a dark shadow below; without it, a flat
+-- fill on a dark ground just looks like a coloured rectangle.
+Theme.rim = Color3.fromRGB(255, 255, 255)
+Theme.accent = Color3.fromRGB(139, 74, 248)
+Theme.accentLight = Color3.fromRGB(184, 158, 255)
+Theme.gold = Color3.fromRGB(255, 190, 62)
+Theme.goldLight = Color3.fromRGB(255, 219, 140)
+Theme.cyan = Color3.fromRGB(96, 224, 246)
+Theme.green = Color3.fromRGB(84, 206, 98)
+Theme.red = Color3.fromRGB(234, 68, 88)
+Theme.text = Color3.fromRGB(248, 246, 255)
+Theme.textMuted = Color3.fromRGB(178, 170, 208)
 
 Theme.rarity = {
 	Common = Color3.fromRGB(180, 180, 180),
@@ -62,8 +70,10 @@ Theme.fontBold = Enum.Font.GothamBold
 
 -- ── Metrics ───────────────────────────────────────────────────────────────
 Theme.radius = 14
-Theme.radiusSmall = 10
+Theme.radiusSmall = 11
 Theme.strokeWidth = 3
-Theme.shadowOffset = 4 -- the hard "lift" under buttons and panels
+Theme.buttonStroke = 4 -- heavier outline on things you can press
+Theme.shadowOffset = 5 -- the hard "lift" under buttons and panels
+Theme.pressDepth = 4 -- how far a button sinks when held
 
 return Theme

@@ -130,8 +130,8 @@ local function buildHud(gui: Instance)
 	-- Active pet card, bottom-left: your fighter, always visible.
 	local petCard = UI.surface({
 		Name = "PetCard",
-		Size = UDim2.fromOffset(184, 62),
-		Position = UDim2.new(0, 12, 1, -136),
+		Size = UDim2.fromOffset(196, 66),
+		Position = UDim2.new(0, 12, 1, -170),
 		BackgroundColor3 = Theme.panel,
 		BorderSizePixel = 0,
 		Parent = gui,
@@ -159,18 +159,31 @@ function UIController.setHelpAction(action: () -> ())
 end
 
 local function buildNav(gui: Instance)
+	-- A dark tray behind the row. Eight bright keys floating over the world were
+	-- hard to pick out against a lit sanctuary; a ground to sit on gives every
+	-- button the same contrast partner whatever is behind it.
+	local tray = UI.surface({
+		Name = "NavTray",
+		Size = UDim2.fromOffset(766, 84),
+		Position = UDim2.new(0.5, -383, 1, -94),
+		BackgroundColor3 = Theme.bg,
+		BackgroundTransparency = 0.12,
+		BorderSizePixel = 0,
+		Parent = gui,
+	}, false)
+
 	local nav = Create("Frame", {
 		Name = "Nav",
-		Size = UDim2.new(1, -24, 0, 56),
-		Position = UDim2.new(0, 12, 1, -66),
+		Size = UDim2.new(1, -12, 1, -12),
+		Position = UDim2.fromOffset(6, 6),
 		BackgroundTransparency = 1,
-		Parent = gui,
+		Parent = tray,
 	})
 	Create("UIListLayout", {
 		FillDirection = Enum.FillDirection.Horizontal,
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		VerticalAlignment = Enum.VerticalAlignment.Center,
-		Padding = UDim.new(0, 8),
+		Padding = UDim.new(0, 6),
 		Parent = nav,
 	})
 
@@ -187,7 +200,10 @@ local function buildNav(gui: Instance)
 		{ glyph = "🛒", text = "Shop", color = Theme.green, panel = "Shop" },
 	}
 	for _, spec in ipairs(specs) do
-		local btn = UI.navButton(spec.glyph, spec.text, spec.color, { Parent = nav })
+		local btn = UI.navButton(spec.glyph, spec.text, spec.color, {
+			Size = UDim2.fromOffset(88, 66),
+			Parent = nav,
+		})
 		btn.MouseButton1Click:Connect(function()
 			UIController.open(spec.panel)
 		end)
